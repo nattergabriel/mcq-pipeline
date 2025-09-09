@@ -1,3 +1,7 @@
+"""
+Extracts text from PDF files and saves it as structured JSON.
+"""
+
 import json
 import pymupdf
 from pathlib import Path
@@ -5,6 +9,9 @@ from typing import List, Dict, Any
 
 
 def extract_text_from_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
+    """
+    Extracts structured text blocks from a single PDF file.
+    """
     extracted_content = []
     try:
         doc = pymupdf.open(pdf_path)
@@ -22,13 +29,19 @@ def extract_text_from_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
 
 
 def main():
+    """
+    Processes all PDFs in the input directory and saves the extracted
+    text content as JSON files in the output directory.
+    """
     input_dir = Path("data/input/pdfs")
     output_dir = Path("data/output/extracted_content")
     output_dir.mkdir(parents=True, exist_ok=True)
+
     pdf_files = list(input_dir.glob("*.pdf"))
     if not pdf_files:
         print(f"No PDF files found in '{input_dir}'.")
         return
+
     for pdf_path in pdf_files:
         content = extract_text_from_pdf(pdf_path)
         if content:
