@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 client = OpenAI(
     base_url=os.getenv("AQUEDUCT_BASE_URL"),
     api_key=os.getenv("AQUEDUCT_TOKEN"),
@@ -14,7 +15,7 @@ client = OpenAI(
 def call_llm(system_message: str, user_message: str, model: str) -> str:
     try:
         response = client.chat.completions.create(
-            model="deepseek-r1",
+            model=model,
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": user_message}
