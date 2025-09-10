@@ -1,14 +1,55 @@
-from src.pdf_extractor import extract_pdf
-from src.mcqs_generator import generate_mcqs
-from src.mcqs_reviewer import review_mcqs
-from src.moodle_exporter import export_mcqs
+from src.pdf_extractor import process_pdfs
+
+import argparse
+from pathlib import Path
+
+
+DEFAULT_INPUT_DIR = Path("data/input/pdfs")
+DEFAULT_OUTPUT_DIR = Path("data/output/extracted_content")
+
+
+def setup_parser() -> argparse.ArgumentParser:
+    """
+    Sets up the command-line interface.
+    """
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(
+        dest="command",
+        required=True,
+        help="Available commands"
+    )
+
+    parser_extract = subparsers.add_parser(
+        "extract",
+        help="Extract text from all PDFs in a folder."
+    )
+    parser_extract.add_argument(
+        "--input-dir",
+        type=Path,
+        default=DEFAULT_INPUT_DIR,
+        help="Folder with the PDF files."
+    )
+    parser_extract.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_OUTPUT_DIR,
+        help="Folder to save the extracted text."
+    )
+
+    return parser
 
 
 def main():
-    extracted_text = extract_pdf("data/input/pdfs/2025S-2-EP1-Variablen.pdf")
-    mcqs = generate_mcqs(extracted_text)
-    reviewed_mcqs = review_mcqs(mcqs)
-    export_mcqs(reviewed_mcqs)
+    """
+    Main entry point for the MCQ generation pipeline.
+    """
+    parser = setup_parser()
+    args = parser.parse_args()
+
+    if args.command == "extract":
+        print(f"Extracting text from PDFs in '{args.input_dir}'...")
+        process_pdfs(args.input_dir, args.output_dir)
+        print(f"Extraction complete. Files saved in '{args.output_dir}'.")
 
 
 if __name__ == "__main__":

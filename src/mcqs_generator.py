@@ -1,5 +1,0 @@
-from src.llm_client import call_llm
-
-
-def generate_mcqs(text: str):
-    pass

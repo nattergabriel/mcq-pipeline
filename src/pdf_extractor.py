@@ -19,8 +19,8 @@ def extract_text_from_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
             blocks = doc[page_number].get_text("blocks")
             page_text_blocks = [block[4] for block in blocks]
             extracted_content.append({
-                'page': page_number + 1,
-                'text_blocks': page_text_blocks
+                "page": page_number + 1,
+                "text_blocks": page_text_blocks
             })
         return extracted_content
     except Exception as e:
@@ -28,13 +28,11 @@ def extract_text_from_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
         return []
 
 
-def main():
+def process_pdfs(input_dir: Path, output_dir: Path):
     """
     Processes all PDFs in the input directory and saves the extracted
     text content as JSON files in the output directory.
     """
-    input_dir = Path("data/input/pdfs")
-    output_dir = Path("data/output/extracted_content")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     pdf_files = list(input_dir.glob("*.pdf"))
@@ -47,10 +45,20 @@ def main():
         if content:
             output_path = output_dir / (pdf_path.stem + ".json")
             try:
-                with open(output_path, "w", encoding='utf-8') as f:
+                with open(output_path, "w", encoding="utf-8") as f:
                     json.dump(content, f, indent=4, ensure_ascii=False)
             except IOError as e:
                 print(f"Could not write to file '{output_path}': {e}")
+
+
+def main():
+    """
+    An example function to test the PDF extraction process.
+    """
+    process_pdfs(
+        input_dir=Path("data/input/pdfs"),
+        output_dir=Path("data/output/extracted_content")
+    )
 
 
 if __name__ == "__main__":

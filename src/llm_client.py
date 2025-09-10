@@ -44,6 +44,9 @@ class LLMClient:
 
 
 def main():
+    """
+    An example function to test the LLMClient class.
+    """
     try:
         llm_api_client = LLMClient()
 
