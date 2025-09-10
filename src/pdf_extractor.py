@@ -7,17 +7,30 @@ import pymupdf
 from pathlib import Path
 from typing import List, Dict, Any
 
+NOISE_PATTERNS = [
+    "EP1 Sommersemester 25"
+]
+
 
 def extract_text_from_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
     """
-    Extracts structured text blocks from a single PDF file.
+    Extracts structured text blocks and filters out common noise.
     """
     extracted_content = []
     try:
         doc = pymupdf.open(pdf_path)
         for page_number in range(len(doc)):
             blocks = doc[page_number].get_text("blocks")
-            page_text_blocks = [block[4] for block in blocks]
+
+            page_text_blocks = []
+            for block in blocks:
+                text = block[4]
+
+                is_noise = any(pattern in text for pattern in NOISE_PATTERNS)
+                if not is_noise:
+                    clean_text = text.rstrip("\n").strip()
+                    page_text_blocks.append(clean_text)
+
             extracted_content.append({
                 "page": page_number + 1,
                 "text_blocks": page_text_blocks
