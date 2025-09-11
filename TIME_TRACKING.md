@@ -21,5 +21,8 @@ This log tracks the time spent on the bachelor's thesis.
 | 09.09.25 | 2.0 | Coding |
 | 10.09.25 | 2 | Technical research |
 | 10.09.25 | 1.5 | Coding |
+| 11.09.25 | 1.0 | Literature research |
+| 11.09.25 | 2 | Technical research |
+| 11.09.25 | 1.5 | Coding |
 
 **Note**: For entries listed as `Coding`, a detailed breakdown of the work can be found in the Git commit history for the corresponding date.
