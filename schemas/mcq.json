@@ -1,0 +1,17 @@
+{
+    "question_text": "string",
+    "options": [
+        {
+            "text": "string",
+            "is_correct": "boolean"
+        }
+    ],
+    "metadata": {
+        "question_id": "string",
+        "lecture_week": "integer"
+    },
+    "generation_info": {
+        "model_name": "string",
+        "prompt_name": "string"
+    }
+}
