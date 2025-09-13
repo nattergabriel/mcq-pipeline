@@ -25,5 +25,6 @@ This log tracks the time spent on the bachelor's thesis.
 | 11.09.25 | 2 | Technical research |
 | 11.09.25 | 1.5 | Coding |
 | 12.09.25 | 2.5 | Expose and literature research |
+| 13.09.25 | 2.5 | LaTeX setup |
 
 **Note**: For entries listed as `Coding`, a detailed breakdown of the work can be found in the Git commit history for the corresponding date.
