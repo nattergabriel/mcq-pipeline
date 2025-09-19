@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 DEFAULT_INPUT_DIR = Path("data/input/pdfs")
-DEFAULT_OUTPUT_DIR = Path("data/output/extracted_content")
+DEFAULT_OUTPUT_DIR = Path("data/output/pdfs/extracted")
 
 
 def setup_parser() -> argparse.ArgumentParser:

@@ -70,7 +70,7 @@ def main():
     """
     process_pdfs(
         input_dir=Path("data/input/pdfs"),
-        output_dir=Path("data/output/extracted_content")
+        output_dir=Path("data/output/pdfs/extracted")
     )
 
 

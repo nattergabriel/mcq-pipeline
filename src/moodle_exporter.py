@@ -1,9 +1,11 @@
 import string
 from pathlib import Path
-from typing import List, Dict, Any
+from xml.dom import minidom
+from typing import List, Dict, Any, Optional
+import xml.etree.ElementTree as ET
 
 
-def export_to_aiken_format(questions: List[Dict[str, Any]], output_path: Path):
+def export_as_aiken(questions: List[Dict[str, Any]], output_path: Path):
     """
     Converts a list of question dictionaries to the Moodle Aiken format and
     saves it to a text file.
@@ -30,11 +32,56 @@ def export_to_aiken_format(questions: List[Dict[str, Any]], output_path: Path):
 
         formatted_blocks.append("\n".join(question_block))
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
     try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("\n\n".join(formatted_blocks))
+    except IOError as e:
+        print(f"Could not write to file '{output_path}': {e}")
+
+
+def export_as_moodle_xml(questions: List[Dict[str, Any]], output_path: Path, category: Optional[str] = ""):
+    """
+    Converts a list of question dictionaries to the MINIMAL Moodle XML format
+    and saves it to an XML file.
+    """
+    root = ET.Element("quiz")
+
+    if category:
+        question = ET.SubElement(root, "question", type="category")
+        question_category = ET.SubElement(question, "category")
+        question_category_text = ET.SubElement(question_category, "text")
+        question_category_text.text = f"$course$/{category}"
+
+    for q_data in questions:
+        question = ET.SubElement(root, "question", type="multichoice")
+
+        name = ET.SubElement(question, "name")
+        name_text = ET.SubElement(name, "text")
+        name_text.text = q_data["question_text"]
+
+        questiontext = ET.SubElement(question, "questiontext")
+        questiontext_text = ET.SubElement(questiontext, "text")
+        questiontext_text.text = q_data["question_text"]
+
+        ET.SubElement(question, "single").text = "true"
+
+        for option in q_data["options"]:
+            fraction = "100" if option.get("is_correct", False) else "0"
+            answer = ET.SubElement(question, "answer", fraction=fraction)
+            answer_text = ET.SubElement(answer, "text")
+            answer_text.text = option['text']
+
+    try:
+        raw = ET.tostring(root, 'utf-8')
+        parsed = minidom.parseString(raw)
+        prettified = parsed.toprettyxml(indent="  ", encoding="utf-8")
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_path, "wb") as f:
+            f.write(prettified)
     except IOError as e:
         print(f"Could not write to file '{output_path}': {e}")
 
@@ -84,11 +131,17 @@ def main():
         }
     ]
 
-    output_dir = Path("data/output/final_mcqs")
+    output_dir = Path("data/output/mcqs/final")
 
-    export_to_aiken_format(
+    export_as_aiken(
         questions=sample_questions,
-        output_path=output_dir / "demo_mcqs.txt"
+        output_path=output_dir / "aiken_export.txt"
+    )
+
+    export_as_moodle_xml(
+        questions=sample_questions,
+        output_path=output_dir / "moodle_xml_export.xml",
+        category="2025S-4-EP1-Schleifen"
     )
 
 
