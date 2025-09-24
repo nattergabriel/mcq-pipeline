@@ -1,4 +1,5 @@
 from src.pdf_extractor import process_pdfs
+from src.mcqs_generator import generate_mcqs
 
 import yaml
 import argparse
@@ -30,18 +31,15 @@ def setup_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(
         dest="command",
         required=True,
-        help="Available commands"
-    )
+        help="Available commands")
 
     subparsers.add_parser(
         "extract",
-        help="Extract text from all PDFs defined in config.yaml."
-    )
+        help="Extract text from all PDFs defined in config.yaml.")
 
     subparsers.add_parser(
         "generate",
-        help="Generate MCQs from extracted text using strategies in config.yaml."
-    )
+        help="Generate MCQs from extracted text using strategies in config.yaml.")
 
     return parser
 
@@ -60,21 +58,30 @@ def main():
     paths = config.get("paths", {})
 
     if args.command == "extract":
+        input_dir = paths.get("input_pdfs_dir")
+        output_dir = paths.get("extracted_content_dir")
 
-        input_path_str = paths.get("input_pdfs_dir")
-        output_path_str = paths.get("extracted_content_dir")
-
-        if not input_path_str or not output_path_str:
+        if not input_dir or not output_dir:
             print(
                 "Error: 'input_pdfs_dir' and/or 'extracted_content_dir' not defined in config.yaml")
             return
 
-        input_dir = Path(input_path_str)
-        output_dir = Path(output_path_str)
+        process_pdfs(Path(input_dir), Path(output_dir))
 
-        print(f"Extracting text from PDFs in '{input_dir}'...")
-        process_pdfs(input_dir, output_dir)
-        print(f"Extraction complete. Files saved in '{output_dir}'.")
+    elif args.command == "generate":
+        extracted_dir = paths.get("extracted_content_dir")
+        mcqs_output_dir = paths.get("generated_mcqs_dir")
+        experiments = config.get("experiments")
+
+        if not extracted_dir or not experiments:
+            print(
+                "Error: 'extracted_content_dir' and/or 'experiments' not defined in config.yaml")
+            return
+
+        generate_mcqs(
+            experiments=experiments,
+            extracted_content_dir=Path(extracted_dir),
+            mcqs_output_dir=Path(mcqs_output_dir))
 
 
 if __name__ == "__main__":

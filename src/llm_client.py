@@ -22,8 +22,7 @@ class LLMClient:
 
         self._client = OpenAI(
             base_url=base_url,
-            api_key=api_key,
-        )
+            api_key=api_key)
 
     def call_llm(self, system_message: str, user_message: str, model: str, temperature: float = 0.5) -> Optional[str]:
         """
@@ -36,8 +35,8 @@ class LLMClient:
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": user_message}
                 ],
-                temperature=temperature
-            )
+                temperature=temperature)
+
             return response.choices[0].message.content
         except APIError as e:
             print(f"The API returned an error: {e}")
@@ -58,8 +57,7 @@ def main():
             system_message=system_prompt,
             user_message=user_prompt,
             model=model,
-            temperature=0.7
-        )
+            temperature=0.7)
 
         if llm_response:
             print(llm_response)

@@ -135,14 +135,12 @@ def main():
 
     export_as_aiken(
         questions=sample_questions,
-        output_path=output_dir / "aiken_export.txt"
-    )
+        output_path=output_dir / "aiken_export.txt")
 
     export_as_moodle_xml(
         questions=sample_questions,
         output_path=output_dir / "moodle_xml_export.xml",
-        category="2025S-4-EP1-Schleifen"
-    )
+        category="2025S-4-EP1-Schleifen")
 
 
 if __name__ == "__main__":

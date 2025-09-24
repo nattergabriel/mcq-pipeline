@@ -68,8 +68,7 @@ def main():
     """
     process_pdfs(
         input_dir=Path("data/input/pdfs"),
-        output_dir=Path("data/output/pdfs/extracted")
-    )
+        output_dir=Path("data/output/pdfs/extracted"))
 
 
 if __name__ == "__main__":

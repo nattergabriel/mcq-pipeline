@@ -1,17 +1,21 @@
 {
-    "question_text": "string",
+    "text": "The text of the question goes here.",
     "options": [
         {
-            "text": "string",
-            "is_correct": "boolean"
+            "text": "Text for the first answer option.",
+            "is_correct": false
+        },
+        {
+            "text": "Text for the second answer option.",
+            "is_correct": true
+        },
+        {
+            "text": "Text for the third answer option.",
+            "is_correct": false
+        },
+        {
+            "text": "Text for the fourth answer option.",
+            "is_correct": false
         }
-    ],
-    "metadata": {
-        "question_id": "string",
-        "lecture_week": "integer"
-    },
-    "generation_info": {
-        "model_name": "string",
-        "prompt_name": "string"
-    }
+    ]
 }
