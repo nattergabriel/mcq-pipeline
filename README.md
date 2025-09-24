@@ -35,7 +35,7 @@ The entire workflow is controlled from `main.py`, while all parameters, paths, a
 
 ### 1. Configuration Setup
 
-Before running the pipeline, set up your configuration in `config.yaml`.
+Before running the pipeline, you'll need to create your own `config.yaml` file. A complete template is provided in `config.example.yaml` to get you started.
 
 Example `config.yaml`:
 
@@ -43,18 +43,19 @@ Example `config.yaml`:
 paths:
   input_pdfs_dir: "data/input/pdfs" 
   extracted_content_dir: "data/output/pdfs/extracted"
+  generated_mcqs_dir: "data/output/mcqs"
 
 experiments:
   - name: "setup1"
-    prompt_file: "prompts/prompt1.txt"
-    model: "mistral-small-3.1-24b"
-    temperature: 0.3
+    prompt_file: "prompts/generation/baseline.txt"
+    model: "mistral-small-3.2-24b"
+    temperature: 0.8
     num_questions: 5
 
   - name: "setup2"
-    prompt_file: "prompts/prompt2.txt"
-    model: "mistral-small-3.1-24b"
-    temperature: 0.7
+    prompt_file: "prompts/generation/fewshot.txt"
+    model: "mistral-small-3.2-24b"
+    temperature: 0.5
     num_questions: 2
 ```
 
@@ -68,7 +69,7 @@ Once your configuration is set, you can execute the different stages of the pipe
 
 #### 3.1. Extract content from PDFs
 
-This command reads PDFs from your input directory, extracts the text, and saves it to the specified output directory.
+This command processes all PDF files located in the `input_pdfs_dir` defined in your config. It extracts the content and saves it in the `extracted_content_dir`.
 
 ```bash
 python main.py extract
@@ -76,7 +77,7 @@ python main.py extract
 
 #### 3.2. Generate MCQs
 
-This command loads the extracted text and runs all the experiments you defined in `config.yaml`.
+This command generates multiple-choice questions based on the previously extracted content. It iterates through each experiment defined in your `config.yaml`, using the specified prompts and model parameters. The results for each experiment are saved in a separate, named subfolder.
 
 ```bash
 python main.py generate
