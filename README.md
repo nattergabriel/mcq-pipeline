@@ -31,27 +31,53 @@ AQUEDUCT_TOKEN="your-secret-api-token"
 
 ## Usage
 
-The entire workflow is controlled from `main.py` using a command-line interface. For a full list of commands and their options, you can use the built-in help flag at any time:
+The entire workflow is controlled from `main.py`, while all parameters, paths, and experimental setups are managed in the `config.yaml` file.
 
+### 1. Configuration Setup
 
-See all available commands (e.g., extract):
-```bash
-python main.py --help
+Before running the pipeline, set up your configuration in `config.yaml`.
+
+Example `config.yaml`:
+
+```yaml
+paths:
+  input_pdfs_dir: "data/input/pdfs" 
+  extracted_content_dir: "data/output/pdfs/extracted"
+
+experiments:
+  - name: "setup1"
+    prompt_file: "prompts/prompt1.txt"
+    model: "mistral-small-3.1-24b"
+    temperature: 0.3
+    num_questions: 5
+
+  - name: "setup2"
+    prompt_file: "prompts/prompt2.txt"
+    model: "mistral-small-3.1-24b"
+    temperature: 0.7
+    num_questions: 2
 ```
 
-See the specific options for a single command:
-```bash
-python main.py <command> --help
-```
+### 2. Add PDFs
 
-### 1. Add PDFs
+Place the lecture PDFs you want to process into the directory you specified for `input_pdfs_dir` in `config.yaml`.
 
-Place the lecture PDFs you want to process into the `data/input/pdfs/` directory.
+### 3. Run the Pipline
 
-### 2. Extract text from PDFs
+Once your configuration is set, you can execute the different stages of the pipeline using simple commands. The script will automatically use the settings from your `config.yaml`.
 
-Run the extract command. This uses the default directories to process your PDFs and save the extracted text.
+#### 3.1. Extract content from PDFs
+
+This command reads PDFs from your input directory, extracts the text, and saves it to the specified output directory.
 
 ```bash
 python main.py extract
+```
+
+#### 3.2. Generate MCQs
+
+This command loads the extracted text and runs all the experiments you defined in `config.yaml`.
+
+```bash
+python main.py generate
 ```
