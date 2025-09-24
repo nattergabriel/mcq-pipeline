@@ -7,9 +7,7 @@ import pymupdf
 from pathlib import Path
 from typing import List, Dict, Any
 
-NOISE_PATTERNS = [
-    "EP1 Sommersemester 25"
-]
+NOISE_PATTERNS = []
 
 
 def extract_text_from_pdf(pdf_path: Path) -> List[Dict[str, Any]]:

@@ -1,0 +1,16 @@
+paths:
+  input_pdfs_dir: "data/input/pdfs" 
+  extracted_content_dir: "data/output/pdfs/extracted"
+
+experiments:
+  - name: "setup1"
+    prompt_file: "prompts/prompt1.txt"
+    model: "mistral-small-3.1-24b"
+    temperature: 0.3
+    num_questions: 5
+
+  - name: "setup2"
+    prompt_file: "prompts/prompt2.txt"
+    model: "mistral-small-3.1-24b"
+    temperature: 0.7
+    num_questions: 2

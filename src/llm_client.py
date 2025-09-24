@@ -3,7 +3,7 @@ Provides a client to interact with an OpenAI-compatible Large Language Model API
 """
 
 import os
-from openai import OpenAI
+from openai import OpenAI, APIError
 from typing import Optional
 from dotenv import load_dotenv
 
@@ -39,8 +39,8 @@ class LLMClient:
                 temperature=temperature
             )
             return response.choices[0].message.content
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        except APIError as e:
+            print(f"The API returned an error: {e}")
 
 
 def main():
