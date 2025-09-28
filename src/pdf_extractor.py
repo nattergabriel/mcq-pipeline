@@ -1,7 +1,3 @@
-"""
-Extracts text from PDF files and saves it as structured JSON.
-"""
-
 import json
 import pymupdf
 from pathlib import Path
@@ -60,16 +56,3 @@ def process_pdfs(input_dir: Path, output_dir: Path):
                     json.dump(content, f, indent=4, ensure_ascii=False)
             except IOError as e:
                 print(f"Could not write to file '{output_path}': {e}")
-
-
-def main():
-    """
-    An example function to test the PDF extraction process.
-    """
-    process_pdfs(
-        input_dir=Path("data/input/pdfs"),
-        output_dir=Path("data/output/pdfs/extracted"))
-
-
-if __name__ == "__main__":
-    main()

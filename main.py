@@ -1,5 +1,6 @@
 from src.pdf_extractor import process_pdfs
 from src.mcqs_generator import generate_mcqs
+from src.mcqs_exporter import export_mcqs_to_moodle
 
 import yaml
 import argparse
@@ -40,6 +41,10 @@ def setup_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "generate",
         help="Generate MCQs from extracted text using strategies in config.yaml.")
+
+    subparsers.add_parser(
+        "export",
+        help="Export generated MCQs to Moodle XML format.")
 
     return parser
 
@@ -82,6 +87,15 @@ def main():
             experiments=experiments,
             extracted_content_dir=Path(extracted_dir),
             mcqs_output_dir=Path(mcqs_output_dir))
+
+    elif args.command == "export":
+        mcqs_output_dir = paths.get("generated_mcqs_dir")
+
+        if not mcqs_output_dir:
+            print("Error: 'generated_mcqs_dir' not defined in config.yaml")
+            return
+
+        export_mcqs_to_moodle(Path(mcqs_output_dir))
 
 
 if __name__ == "__main__":
