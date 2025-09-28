@@ -1,11 +1,15 @@
+"""
+Module for exporting generated MCQs from JSON format to Moodle XML format.
+"""
+
 import json
 from pathlib import Path
 from xml.dom import minidom
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import xml.etree.ElementTree as ET
 
 
-def _create_moodle_xml(questions: List[Dict[str, Any]], category: str) -> str:
+def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) -> str:
     """
     Converts a list of question dictionaries into a Moodle XML string.
     """
@@ -41,7 +45,7 @@ def _create_moodle_xml(questions: List[Dict[str, Any]], category: str) -> str:
     return parsed_xml.toprettyxml(indent="  ", encoding="utf-8")
 
 
-def export_mcqs_to_moodle(mcqs_base_dir: Path):
+def find_and_export_mcqs(mcqs_base_dir: Path):
     """
     Finds all 'generated_mcqs.json' files recursively and converts them
     to Moodle XML format, saving the output in the same location.
@@ -64,7 +68,7 @@ def export_mcqs_to_moodle(mcqs_base_dir: Path):
                 print(f"Skipping '{path}' as it contains no questions.")
                 continue
 
-            xml_content = _create_moodle_xml(
+            xml_content = _convert_mcqs_to_moodle_xml(
                 questions=questions,
                 category=path.parent.name
             )

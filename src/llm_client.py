@@ -9,10 +9,15 @@ from dotenv import load_dotenv
 
 
 class LLMClient:
-    """A client for making calls to an OpenAI-compatible LLM."""
+    """
+    A client for making calls to an OpenAI-compatible LLM.
+    """
 
     def __init__(self):
-        """Initializes the LLMClient and sets up the API client."""
+        """
+        Initializes the LLMClient by loading environment variables and
+        setting up the API client.
+        """
         load_dotenv()
         base_url = os.getenv("AQUEDUCT_BASE_URL")
         api_key = os.getenv("AQUEDUCT_TOKEN")
@@ -40,30 +45,3 @@ class LLMClient:
             return response.choices[0].message.content
         except APIError as e:
             print(f"The API returned an error: {e}")
-
-
-def main():
-    """
-    An example function to test the LLMClient class.
-    """
-    try:
-        llm_api_client = LLMClient()
-
-        system_prompt = "you are an expert in..."
-        user_prompt = "hi how are you?"
-        model = "mistral-small-3.1-24b"
-
-        llm_response = llm_api_client.call_llm(
-            system_message=system_prompt,
-            user_message=user_prompt,
-            model=model,
-            temperature=0.7)
-
-        if llm_response:
-            print(llm_response)
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-
-if __name__ == "__main__":
-    main()

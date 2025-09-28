@@ -1,17 +1,21 @@
-from src.pdf_extractor import process_pdfs
-from src.mcqs_generator import generate_mcqs
-from src.mcqs_exporter import export_mcqs_to_moodle
+"""
+Main entry point and command-line interface for the MCQ generation pipeline.
+"""
 
 import yaml
 import argparse
 from pathlib import Path
 
+from src.pdf_extractor import extract_and_save_pdfs
+from src.mcqs_generator import generate_and_save_mcqs
+from src.mcqs_exporter import find_and_export_mcqs
+
 CONFIG_PATH = Path("config.yaml")
 
 
-def load_config(config_path: Path) -> dict:
+def _load_config(config_path: Path) -> dict:
     """
-    Load the YAML configuration file.
+    Load the YAML configuration file from the specified path.
     """
     try:
         with open(config_path, 'r', encoding="utf-8") as f:
@@ -24,7 +28,7 @@ def load_config(config_path: Path) -> dict:
         return None
 
 
-def setup_parser() -> argparse.ArgumentParser:
+def _setup_parser() -> argparse.ArgumentParser:
     """
     Sets up the command-line interface.
     """
@@ -51,12 +55,12 @@ def setup_parser() -> argparse.ArgumentParser:
 
 def main():
     """
-    Main entry point for the MCQ generation pipeline.
+    Main entry point for the MCQ generation pipeline, handling CLI commands.
     """
-    parser = setup_parser()
+    parser = _setup_parser()
     args = parser.parse_args()
 
-    config = load_config(CONFIG_PATH)
+    config = _load_config(CONFIG_PATH)
     if not config:
         return
 
@@ -71,7 +75,7 @@ def main():
                 "Error: 'input_pdfs_dir' and/or 'extracted_content_dir' not defined in config.yaml")
             return
 
-        process_pdfs(Path(input_dir), Path(output_dir))
+        extract_and_save_pdfs(Path(input_dir), Path(output_dir))
 
     elif args.command == "generate":
         extracted_dir = paths.get("extracted_content_dir")
@@ -83,7 +87,7 @@ def main():
                 "Error: 'extracted_content_dir' and/or 'experiments' not defined in config.yaml")
             return
 
-        generate_mcqs(
+        generate_and_save_mcqs(
             experiments=experiments,
             extracted_content_dir=Path(extracted_dir),
             mcqs_output_dir=Path(mcqs_output_dir))
@@ -95,7 +99,7 @@ def main():
             print("Error: 'generated_mcqs_dir' not defined in config.yaml")
             return
 
-        export_mcqs_to_moodle(Path(mcqs_output_dir))
+        find_and_export_mcqs(Path(mcqs_output_dir))
 
 
 if __name__ == "__main__":

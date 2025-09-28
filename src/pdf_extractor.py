@@ -1,3 +1,8 @@
+"""
+Module for extracting text content from PDF files and structuring it
+into pages and text blocks.
+"""
+
 import json
 import pymupdf
 from pathlib import Path
@@ -6,9 +11,10 @@ from typing import List, Dict, Any
 NOISE_PATTERNS = []
 
 
-def extract_text_from_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
+def _extract_text_from_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
     """
-    Extracts structured text blocks and filters out common noise.
+    Extracts structured text blocks from a PDF and filters out common noise
+    patterns.
     """
     extracted_content = []
     try:
@@ -35,7 +41,7 @@ def extract_text_from_pdf(pdf_path: Path) -> List[Dict[str, Any]]:
         return []
 
 
-def process_pdfs(input_dir: Path, output_dir: Path):
+def extract_and_save_pdfs(input_dir: Path, output_dir: Path):
     """
     Processes all PDFs in the input directory and saves the extracted
     text content as JSON files in the output directory.
@@ -48,7 +54,7 @@ def process_pdfs(input_dir: Path, output_dir: Path):
         return
 
     for pdf_path in pdf_files:
-        content = extract_text_from_pdf(pdf_path)
+        content = _extract_text_from_pdf(pdf_path)
         if content:
             output_path = output_dir / (pdf_path.stem + ".json")
             try:
