@@ -1,5 +1,5 @@
 paths:
-  input_pdfs_dir: "data/input/pdfs" 
+  input_pdfs_dir: "data/input/pdfs"
   extracted_content_dir: "data/output/pdfs/extracted"
   generated_mcqs_dir: "data/output/mcqs"
 
