@@ -25,29 +25,29 @@ def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) 
 
         name = ET.SubElement(question, "name")
         name_text = ET.SubElement(name, "text")
-        name_text.text = q_data["text"][:50]
+        name_text.text = q_data["question_text"][:50]
 
         questiontext = ET.SubElement(question, "questiontext")
         questiontext_text = ET.SubElement(questiontext, "text")
-        questiontext_text.text = q_data["text"]
+        questiontext_text.text = q_data["question_text"]
 
         ET.SubElement(question, "single").text = "true"
         ET.SubElement(question, "shuffleanswers").text = "true"
 
-        for option in q_data["options"]:
+        for option in q_data["answer_options"]:
             fraction = "100" if option.get("is_correct", False) else "0"
             answer = ET.SubElement(question, "answer", fraction=fraction)
             answer_text = ET.SubElement(answer, "text")
-            answer_text.text = option['text']
+            answer_text.text = option["text"]
 
-    raw_xml = ET.tostring(root, 'utf-8')
+    raw_xml = ET.tostring(root, "utf-8")
     parsed_xml = minidom.parseString(raw_xml)
     return parsed_xml.toprettyxml(indent="  ", encoding="utf-8")
 
 
 def find_and_export_mcqs(mcqs_base_dir: Path):
     """
-    Finds all 'generated_mcqs.json' files recursively and converts them
+    Finds all "generated_mcqs.json" files recursively and converts them
     to Moodle XML format, saving the output in the same location.
     """
     files = list(mcqs_base_dir.rglob("generated_mcqs.json"))

@@ -73,7 +73,7 @@ def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_
                     try:
                         question_data = json.loads(response_str)
 
-                        if "text" in question_data and "options" in question_data:
+                        if "question_text" in question_data and "answer_options" in question_data:
                             all_generated_questions.append(question_data)
                         else:
                             print(

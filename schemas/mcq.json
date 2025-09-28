@@ -1,6 +1,6 @@
 {
-    "text": "The text of the question goes here.",
-    "options": [
+    "question_text": "The text of the question goes here.",
+    "answer_options": [
         {
             "text": "Text for the first answer option.",
             "is_correct": false
