@@ -18,7 +18,7 @@ def _load_config(config_path: Path) -> dict:
     Load the YAML configuration file from the specified path.
     """
     try:
-        with open(config_path, 'r', encoding="utf-8") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
         print(f"Configuration file not found at '{config_path}'")
@@ -33,10 +33,15 @@ def _setup_parser() -> argparse.ArgumentParser:
     Sets up the command-line interface.
     """
     parser = argparse.ArgumentParser()
+
     subparsers = parser.add_subparsers(
         dest="command",
         required=True,
         help="Available commands")
+
+    subparsers.add_parser(
+        "run",
+        help="Run the entire pipeline: extract, generate, and export.")
 
     subparsers.add_parser(
         "extract",
@@ -53,6 +58,55 @@ def _setup_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _run_extract(config: dict):
+    """
+    Reads the necessary paths from the config file and calls the main extraction function.
+    """
+    paths = config.get("paths", {})
+    input_dir = paths.get("input_pdfs_dir")
+    output_dir = paths.get("extracted_content_dir")
+
+    if not input_dir or not output_dir:
+        print("Error: 'input_pdfs_dir' and/or 'extracted_content_dir' not defined in config.yaml")
+        return
+
+    extract_and_save_pdfs(Path(input_dir), Path(output_dir))
+
+
+def _run_generate(config: dict):
+    """
+    Reads paths and experiment settings from the config and calls the main generator function.
+    """
+    paths = config.get("paths", {})
+    extracted_dir = paths.get("extracted_content_dir")
+    mcqs_output_dir = paths.get("generated_mcqs_dir")
+    experiments = config.get("experiments")
+
+    if not extracted_dir or not mcqs_output_dir or not experiments:
+        print("Error: 'extracted_content_dir', 'generated_mcqs_dir', and/or 'experiments' not defined in config.yaml")
+        return
+
+    generate_and_save_mcqs(
+        experiments=experiments,
+        extracted_content_dir=Path(extracted_dir),
+        mcqs_output_dir=Path(mcqs_output_dir))
+
+
+def _run_export(config: dict):
+    """
+    Reads the output directory path from the config and calls the main export
+    function to convert JSON files to Moodle XML.
+    """
+    paths = config.get("paths", {})
+    mcqs_output_dir = paths.get("generated_mcqs_dir")
+
+    if not mcqs_output_dir:
+        print("Error: 'generated_mcqs_dir' not defined in config.yaml")
+        return
+
+    find_and_export_mcqs(Path(mcqs_output_dir))
+
+
 def main():
     """
     Main entry point for the MCQ generation pipeline, handling CLI commands.
@@ -64,42 +118,19 @@ def main():
     if not config:
         return
 
-    paths = config.get("paths", {})
+    if args.command == "run":
+        _run_extract(config)
+        _run_generate(config)
+        _run_export(config)
 
-    if args.command == "extract":
-        input_dir = paths.get("input_pdfs_dir")
-        output_dir = paths.get("extracted_content_dir")
-
-        if not input_dir or not output_dir:
-            print(
-                "Error: 'input_pdfs_dir' and/or 'extracted_content_dir' not defined in config.yaml")
-            return
-
-        extract_and_save_pdfs(Path(input_dir), Path(output_dir))
+    elif args.command == "extract":
+        _run_extract(config)
 
     elif args.command == "generate":
-        extracted_dir = paths.get("extracted_content_dir")
-        mcqs_output_dir = paths.get("generated_mcqs_dir")
-        experiments = config.get("experiments")
-
-        if not extracted_dir or not experiments:
-            print(
-                "Error: 'extracted_content_dir' and/or 'experiments' not defined in config.yaml")
-            return
-
-        generate_and_save_mcqs(
-            experiments=experiments,
-            extracted_content_dir=Path(extracted_dir),
-            mcqs_output_dir=Path(mcqs_output_dir))
+        _run_generate(config)
 
     elif args.command == "export":
-        mcqs_output_dir = paths.get("generated_mcqs_dir")
-
-        if not mcqs_output_dir:
-            print("Error: 'generated_mcqs_dir' not defined in config.yaml")
-            return
-
-        find_and_export_mcqs(Path(mcqs_output_dir))
+        _run_export(config)
 
 
 if __name__ == "__main__":
