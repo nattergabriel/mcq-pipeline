@@ -1,4 +1,4 @@
-# Bachelor's Thesis
+# Bachelor's Thesis: MCQ Generation Pipeline
 
 This repository contains the source code and documentation for my bachelor's thesis, which focuses on the automated generation of multiple-choice questions from university lecture materials.
 
@@ -71,7 +71,7 @@ Once your configuration is set, you can execute the different stages of the pipe
 
 #### 3.1. Extract content from PDFs
 
-This command processes all PDF files located in the `input_pdfs_dir` defined in your config. It extracts the content and saves it in the `extracted_content_dir`.
+This command processes all PDF files found in the `input_pdfs_dir`. It extracts the content from each file and saves it as a structured JSON file in the `extracted_content_dir`.
 
 ```bash
 python main.py extract
@@ -79,8 +79,16 @@ python main.py extract
 
 #### 3.2. Generate MCQs
 
-This command generates multiple-choice questions based on the previously extracted content. It iterates through each experiment defined in your `config.yaml`, using the specified prompts and model parameters. The results for each experiment are saved in a separate, named subfolder.
+This command runs the experiments defined in your `config.yaml` to generate multiple-choice questions from the extracted content. The results for each experiment are saved in a separate, named subfolder within the `generated_mcqs_dir`, always using the filename `generated_mcqs.json`.
 
 ```bash
 python main.py generate
+```
+
+#### 3.3. Export Generated Questions
+
+This command converts the generated questions for all completed experiments into Moodle-compatible XML files. It automatically searches the `generated_mcqs_dir` and processes any file named `generated_mcqs.json` found in the experiment subfolders.
+
+```bash
+python main.py export
 ```
