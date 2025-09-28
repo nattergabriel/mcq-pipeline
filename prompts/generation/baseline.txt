@@ -9,24 +9,4 @@ REGELN:
 - Antworte AUSSCHLIESSLICH mit einem einzigen JSON-Objekt. Füge keine Erklärungen, Einleitungstexte oder Markdown-Formatierungen wie ```json hinzu.
 
 Deine Antwort muss exakt diesem JSON-Schema folgen:
-{
-    "text": "Der Text der Frage kommt hierher.",
-    "options": [
-        {
-            "text": "Text für die erste Antwortmöglichkeit.",
-            "is_correct": false
-        },
-        {
-            "text": "Text für die zweite Antwortmöglichkeit.",
-            "is_correct": true
-        },
-        {
-            "text": "Text für die dritte Antwortmöglichkeit.",
-            "is_correct": false
-        },
-        {
-            "text": "Text für die vierte Antwortmöglichkeit.",
-            "is_correct": false
-        }
-    ]
-}
+{SCHEMA}

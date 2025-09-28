@@ -48,12 +48,14 @@ paths:
 experiments:
   - name: "setup1"
     prompt_file: "prompts/generation/baseline.txt"
+    schema_file: "schemas/mcq.json"
     model: "mistral-small-3.2-24b"
     temperature: 0.8
     num_questions: 5
 
   - name: "setup2"
     prompt_file: "prompts/generation/fewshot.txt"
+    schema_file: "schemas/mcq.json"
     model: "mistral-small-3.2-24b"
     temperature: 0.5
     num_questions: 2

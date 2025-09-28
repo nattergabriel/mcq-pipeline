@@ -13,7 +13,7 @@ def export_as_aiken(questions: List[Dict[str, Any]], output_path: Path):
     formatted_blocks = []
 
     for question in questions:
-        question_block = [question["question_text"]]
+        question_block = [question["text"]]
         correct_answer_letter = None
 
         for i, option in enumerate(question["options"]):
@@ -27,7 +27,7 @@ def export_as_aiken(questions: List[Dict[str, Any]], output_path: Path):
             question_block.append(f"ANSWER: {correct_answer_letter}")
         else:
             print(
-                f"No correct answer found for question: '{question['question_text']}' - skipping.")
+                f"No correct answer found for question: '{question['text']}' - skipping.")
             continue
 
         formatted_blocks.append("\n".join(question_block))
@@ -59,11 +59,11 @@ def export_as_moodle_xml(questions: List[Dict[str, Any]], output_path: Path, cat
 
         name = ET.SubElement(question, "name")
         name_text = ET.SubElement(name, "text")
-        name_text.text = q_data["question_text"]
+        name_text.text = q_data["text"]
 
         questiontext = ET.SubElement(question, "questiontext")
         questiontext_text = ET.SubElement(questiontext, "text")
-        questiontext_text.text = q_data["question_text"]
+        questiontext_text.text = q_data["text"]
 
         ET.SubElement(question, "single").text = "true"
 
@@ -92,7 +92,7 @@ def main():
     """
     sample_questions = [
         {
-            "question_text": "Was ist der Hauptunterschied zwischen einer `while`-Schleife und einer `do-while`-Schleife in Java?",
+            "text": "Was ist der Hauptunterschied zwischen einer `while`-Schleife und einer `do-while`-Schleife in Java?",
             "options": [
                 {
                     "text": "Eine `do-while`-Schleife ist immer schneller als eine `while`-Schleife.",
@@ -113,7 +113,7 @@ def main():
             ]
         },
         {
-            "question_text": "Welche Art von Schleife eignet sich typischerweise am besten, wenn die genaue Anzahl der Iterationen im Voraus bekannt ist, wie z.B. beim Zählen von 0 bis 10?",
+            "text": "Welche Art von Schleife eignet sich typischerweise am besten, wenn die genaue Anzahl der Iterationen im Voraus bekannt ist, wie z.B. beim Zählen von 0 bis 10?",
             "options": [
                 {
                     "text": "Eine `for`-Schleife (Zählschleife)",
@@ -131,15 +131,15 @@ def main():
         }
     ]
 
-    output_dir = Path("data/output/mcqs/final")
+    output_dir = Path("data/output/mcqs/testing")
 
     export_as_aiken(
         questions=sample_questions,
-        output_path=output_dir / "aiken_export.txt")
+        output_path=output_dir / "exported_mcqs.txt")
 
     export_as_moodle_xml(
         questions=sample_questions,
-        output_path=output_dir / "moodle_xml_export.xml",
+        output_path=output_dir / "exported_mcqs.xml",
         category="2025S-4-EP1-Schleifen")
 
 

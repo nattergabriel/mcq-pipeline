@@ -24,15 +24,26 @@ def generate_mcqs(experiments: List[Dict[str, Any]], extracted_content_dir: Path
     for experiment in experiments:
         name = experiment.get("name")
         prompt_file = Path(experiment.get("prompt_file"))
+        schema_file = Path(experiment.get("schema_file"))
         model = experiment.get("model")
         temperature = experiment.get("temperature", 0.5)
         num_questions = experiment.get("num_questions", 1)
 
         try:
-            system_prompt = prompt_file.read_text(encoding="utf-8")
-        except FileNotFoundError:
+            with open(schema_file, "r", encoding="utf-8") as f:
+                schema_content = json.load(f)
+            schema_str = json.dumps(schema_content, indent=4)
+
+            system_prompt = prompt_file.read_text(
+                encoding="utf-8").replace("{SCHEMA}", schema_str)
+
+        except FileNotFoundError as e:
             print(
-                f"Prompt file not found at '{prompt_file}'. Skipping.")
+                f"Prompt or schema file not found: {e}. Skipping experiment.")
+            continue
+        except json.JSONDecodeError as e:
+            print(
+                f"Error decoding schema JSON from '{schema_file}': {e}. Skipping experiment.")
             continue
 
         all_generated_questions = []
@@ -61,7 +72,7 @@ def generate_mcqs(experiments: List[Dict[str, Any]], extracted_content_dir: Path
                             all_generated_questions.append(question_data)
                         else:
                             print(
-                                f"LLM response for question {i+1} has an invalid schema. Skipping.")
+                                f"LLM response for question {i+1} has an invalid schema. Skipping question.")
 
                     except json.JSONDecodeError:
                         print(
