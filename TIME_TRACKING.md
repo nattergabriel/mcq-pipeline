@@ -42,5 +42,8 @@ This log tracks the time spent on the bachelor's thesis.
 | 01.10.25 | 1 | Meeting |
 | 01.10.25 | 2 | Thesis writing |
 | 02.10.25 | 2 | Literature research |
+| 03.10.25 | 4.5 | Literature research |
+| 03.10.25 | 3 | Thesis writing |
+| 05.10.25 | 0.5 | Thesis writing |
 
 **Note**: For entries listed as `Coding`, a detailed breakdown of the work can be found in the Git commit history for the corresponding date.
