@@ -13,6 +13,8 @@ from src.llm_client import LLMClient
 
 logger = logging.getLogger(__name__)
 
+GENERATION_SCHEMA_PATH = Path("llm_schemas/generation.json")
+
 
 def _chunk_pages(pages: List[Dict[str, Any]], pages_per_chunk: int, overlap: int) -> List[List[Dict[str, Any]]]:
     """
@@ -63,7 +65,6 @@ def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_
     for experiment in experiments:
         name = experiment.get("name")
         prompt_file = Path(experiment.get("prompt_file"))
-        schema_file = Path(experiment.get("schema_file"))
         model = experiment.get("model")
         temperature = experiment.get("temperature", 0.5)
         num_questions = experiment.get("num_questions", 1)
@@ -75,7 +76,7 @@ def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_
         try:
             # Load schema and inject into prompt template
             schema_str = json.dumps(
-                json.load(open(schema_file, "r", encoding="utf-8")), indent=4)
+                json.load(open(GENERATION_SCHEMA_PATH, "r", encoding="utf-8")), indent=4)
             system_prompt = prompt_file.read_text(
                 encoding="utf-8").replace("{SCHEMA}", schema_str)
         except (FileNotFoundError, json.JSONDecodeError) as e:

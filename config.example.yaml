@@ -7,7 +7,6 @@ generation:
   experiments:
     - name: "setup1"
       prompt_file: "prompts/generation/baseline.txt"
-      schema_file: "llm_schemas/generation.json"
       model: "mistral-small-3.2-24b"
       temperature: 0.75
       num_questions: 1
@@ -16,7 +15,6 @@ generation:
 
 evaluation:
   prompt_file: "prompts/evaluation/baseline.txt"
-  schema_file: "llm_schemas/evaluation.json"
   model: "mistral-small-3.2-24b"
   temperature: 0.3
   criteria_weights:
