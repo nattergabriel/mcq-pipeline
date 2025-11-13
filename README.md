@@ -37,36 +37,6 @@ The entire workflow is controlled from `main.py`, while all parameters, paths, a
 
 Before running the pipeline, you'll need to create your own `config.yaml` file. A complete template is provided in `config.example.yaml` to get you started.
 
-Example `config.yaml`:
-
-```yaml
-output_dir: "data/output"
-
-extraction:
-  input_pdfs_dir: "data/input/pdfs"
-
-generation:
-  experiments:
-    - name: "setup1"
-      prompt_file: "prompts/generation/baseline.txt"
-      schema_file: "llm_schemas/generation.json"
-      model: "mistral-small-3.2-24b"
-      temperature: 0.75
-      num_questions: 1
-      pages_per_chunk: 13
-      chunk_overlap: 1
-
-evaluation:
-  prompt_file: "prompts/evaluation/baseline.txt"
-  schema_file: "llm_schemas/evaluation.json"
-  model: "mistral-small-3.2-24b"
-  temperature: 0.3
-  criteria_weights:
-    clarity: 1.0
-    correctness: 1.0
-    distractor_quality: 1.0
-```
-
 ### 2. Add PDFs
 
 Place the lecture PDFs you want to process into the directory you specified for `extraction.input_pdfs_dir` in `config.yaml` (e.g., `data/input/pdfs`).

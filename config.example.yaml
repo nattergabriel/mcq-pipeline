@@ -6,11 +6,23 @@ extraction:
 generation:
   experiments:
     - name: "setup1"
-      prompt_file: "prompts/generation/baseline.txt"
+      mode: "single_step"
+      prompt_file: "prompts/generation/single_step_baseline.txt"
       model: "mistral-small-3.2-24b"
       temperature: 0.75
-      num_questions: 1
+      num_questions_per_chunk: 1
       pages_per_chunk: 13
+      chunk_overlap: 1
+
+    - name: "setup2"
+      mode: "two_step"
+      question_prompt_file: "prompts/generation/two_step_question.txt"
+      distractor_prompt_file: "prompts/generation/two_step_distractors.txt"
+      prompt_file: "prompts/generation/single_step_baseline.txt"
+      model: "mistral-small-3.2-24b"
+      temperature: 0.9
+      num_questions_per_chunk: 1
+      pages_per_chunk: 20
       chunk_overlap: 1
 
 evaluation:
