@@ -1,20 +1,20 @@
 {
-    "question_text": "The text of the question goes here.",
+    "question_text": "Der Text der Frage kommt hier hin.",
     "answer_options": [
         {
-            "text": "Text for the first answer option.",
+            "text": "Text für die erste Antwortoption.",
             "is_correct": true
         },
         {
-            "text": "Text for the second answer option.",
+            "text": "Text für die zweite Antwortoption.",
             "is_correct": false
         },
         {
-            "text": "Text for the third answer option.",
+            "text": "Text für die dritte Antwortoption.",
             "is_correct": false
         },
         {
-            "text": "Text for the fourth answer option.",
+            "text": "Text für die vierte Antwortoption.",
             "is_correct": false
         }
     ]

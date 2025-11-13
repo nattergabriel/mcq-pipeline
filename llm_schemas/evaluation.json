@@ -1,0 +1,14 @@
+{
+    "clarity": {
+        "score": 2,
+        "reasoning": "Kurze Begründung für die Bewertung der Klarheit."
+    },
+    "correctness": {
+        "score": 2,
+        "reasoning": "Kurze Begründung für die Bewertung der Korrektheit."
+    },
+    "distractor_quality": {
+        "score": 2,
+        "reasoning": "Kurze Begründung für die Bewertung der Distraktoren."
+    }
+}

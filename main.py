@@ -73,16 +73,17 @@ def _run_extract(config: dict):
     Reads the necessary paths from the config file and calls the main extraction function.
     """
     logger.info("Starting PDF extraction")
-    paths = config.get("paths", {})
-    input_dir = paths.get("input_pdfs_dir")
-    output_dir = paths.get("extracted_content_dir")
+    extraction_config = config.get("extraction", {})
+    input_dir = extraction_config.get("input_pdfs_dir")
+    output_dir = config.get("output_dir")
 
     if not input_dir or not output_dir:
         logger.error(
-            "'input_pdfs_dir' and/or 'extracted_content_dir' not defined in config.yaml")
+            "'extraction.input_pdfs_dir' and/or 'output_dir' not defined in config.yaml")
         return
 
-    extract_and_save_pdfs(Path(input_dir), Path(output_dir))
+    extracted_output_dir = Path(output_dir) / "extracted_pdfs"
+    extract_and_save_pdfs(Path(input_dir), extracted_output_dir)
 
 
 def _run_generate(config: dict):
@@ -90,20 +91,22 @@ def _run_generate(config: dict):
     Reads paths and experiment settings from the config and calls the main generator function.
     """
     logger.info("Starting MCQ generation")
-    paths = config.get("paths", {})
-    extracted_dir = paths.get("extracted_content_dir")
-    mcqs_output_dir = paths.get("generated_mcqs_dir")
-    experiments = config.get("experiments")
+    output_dir = config.get("output_dir")
+    generation_config = config.get("generation", {})
+    experiments = generation_config.get("experiments")
 
-    if not extracted_dir or not mcqs_output_dir or not experiments:
+    if not output_dir or not experiments:
         logger.error(
-            "'extracted_content_dir', 'generated_mcqs_dir', and/or 'experiments' not defined in config.yaml")
+            "'output_dir' and/or 'generation.experiments' not defined in config.yaml")
         return
+
+    extracted_content_dir = Path(output_dir) / "extracted_pdfs"
+    mcqs_output_dir = Path(output_dir) / "mcqs"
 
     generate_and_save_mcqs(
         experiments=experiments,
-        extracted_content_dir=Path(extracted_dir),
-        mcqs_output_dir=Path(mcqs_output_dir))
+        extracted_content_dir=extracted_content_dir,
+        mcqs_output_dir=mcqs_output_dir)
 
 
 def _run_export(config: dict):
@@ -112,14 +115,15 @@ def _run_export(config: dict):
     function to convert JSON files to Moodle XML.
     """
     logger.info("Starting MCQ export")
-    paths = config.get("paths", {})
-    mcqs_output_dir = paths.get("generated_mcqs_dir")
+    output_dir = config.get("output_dir")
 
-    if not mcqs_output_dir:
-        logger.error("'generated_mcqs_dir' not defined in config.yaml")
+    if not output_dir:
+        logger.error("'output_dir' not defined in config.yaml")
         return
 
-    find_and_export_mcqs(Path(mcqs_output_dir))
+    # Export reads from output_dir/mcqs
+    mcqs_output_dir = Path(output_dir) / "mcqs"
+    find_and_export_mcqs(mcqs_output_dir)
 
 
 def main():

@@ -1,23 +1,25 @@
-paths:
+output_dir: "data/output"
+
+extraction:
   input_pdfs_dir: "data/input/pdfs"
-  extracted_content_dir: "data/output/pdfs/extracted"
-  generated_mcqs_dir: "data/output/mcqs"
 
-experiments:
-  - name: "setup1"
-    prompt_file: "prompts/generation/baseline.txt"
-    generation_schema_file: "llm_schemas/generation.json"
-    model: "mistral-small-3.2-24b"
-    temperature: 0.75
-    num_questions: 1
-    pages_per_chunk: 13
-    chunk_overlap: 1
+generation:
+  experiments:
+    - name: "setup1"
+      prompt_file: "prompts/generation/baseline.txt"
+      schema_file: "llm_schemas/generation.json"
+      model: "mistral-small-3.2-24b"
+      temperature: 0.75
+      num_questions: 1
+      pages_per_chunk: 13
+      chunk_overlap: 1
 
-  - name: "setup2"
-    prompt_file: "prompts/generation/fewshot.txt"
-    generation_schema_file: "llm_schemas/generation.json"
-    model: "mistral-small-3.2-24b"
-    temperature: 0.5
-    num_questions: 5
-    pages_per_chunk: 5
-    chunk_overlap: 1
+evaluation:
+  prompt_file: "prompts/evaluation/baseline.txt"
+  schema_file: "llm_schemas/evaluation.json"
+  model: "mistral-small-3.2-24b"
+  temperature: 0.3
+  criteria_weights:
+    clarity: 1.0
+    correctness: 1.0
+    distractor_quality: 1.0

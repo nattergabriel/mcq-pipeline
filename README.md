@@ -40,27 +40,38 @@ Before running the pipeline, you'll need to create your own `config.yaml` file. 
 Example `config.yaml`:
 
 ```yaml
-paths:
-  input_pdfs_dir: "data/input/pdfs"
-  extracted_content_dir: "data/output/pdfs/extracted"
-  generated_mcqs_dir: "data/output/mcqs"
+output_dir: "data/output"
 
-experiments:
-  - name: "testing"
-    prompt_file: "prompts/generation/baseline.txt"
-    generation_schema_file: "llm_schemas/generation.json"
-    model: "mistral-small-3.2-24b"
-    temperature: 0.75
-    num_questions: 1
-    pages_per_chunk: 13
-    chunk_overlap: 1
+extraction:
+  input_pdfs_dir: "data/input/pdfs"
+
+generation:
+  experiments:
+    - name: "setup1"
+      prompt_file: "prompts/generation/baseline.txt"
+      schema_file: "llm_schemas/generation.json"
+      model: "mistral-small-3.2-24b"
+      temperature: 0.75
+      num_questions: 1
+      pages_per_chunk: 13
+      chunk_overlap: 1
+
+evaluation:
+  prompt_file: "prompts/evaluation/baseline.txt"
+  schema_file: "llm_schemas/evaluation.json"
+  model: "mistral-small-3.2-24b"
+  temperature: 0.3
+  criteria_weights:
+    clarity: 1.0
+    correctness: 1.0
+    distractor_quality: 1.0
 ```
 
 ### 2. Add PDFs
 
-Place the lecture PDFs you want to process into the directory you specified for `input_pdfs_dir` in `config.yaml`.
+Place the lecture PDFs you want to process into the directory you specified for `extraction.input_pdfs_dir` in `config.yaml` (e.g., `data/input/pdfs`).
 
-### 3. Run the Pipline
+### 3. Run the Pipeline
 
 You can execute the workflow in two ways: either all at once for a complete run or step-by-step for more control.
 
@@ -82,7 +93,7 @@ This approach is useful when you only need to perform a specific part of the pro
 
 1. Extract Content from PDFs
 
-   This command processes all PDF files found in the `input_pdfs_dir`. It extracts the content from each file and saves it as a structured JSON file in the `extracted_content_dir`.
+   This command processes all PDF files found in the `extraction.input_pdfs_dir`. It extracts the content from each file and saves it as a structured JSON file in `output_dir/extracted_pdfs/`.
 
    ```bash
    python main.py extract
@@ -90,7 +101,7 @@ This approach is useful when you only need to perform a specific part of the pro
 
 2. Generate MCQs
 
-   This command runs the experiments defined in your `config.yaml` to generate multiple-choice questions from the extracted content. The results for each experiment are saved in a separate, named subfolder within the `generated_mcqs_dir`, always using the filename `generated_mcqs.json`.
+   This command runs the experiments defined in your `config.yaml` under `generation.experiments` to generate multiple-choice questions from the extracted content. The results for each experiment are saved in a separate, named subfolder within `output_dir/mcqs/`, always using the filename `generated_mcqs.json`.
 
    ```bash
    python main.py generate
@@ -98,7 +109,7 @@ This approach is useful when you only need to perform a specific part of the pro
 
 3. Export Generated Questions
 
-   This command converts the generated questions for all completed experiments into Moodle-compatible XML files. It automatically searches the `generated_mcqs_dir` and processes any file named `generated_mcqs.json` found in the experiment subfolders.
+   This command converts the generated questions for all completed experiments into Moodle-compatible XML files. It automatically searches `output_dir/mcqs/` and processes any file named `generated_mcqs.json` found in the experiment subfolders.
 
    ```bash
    python main.py export
