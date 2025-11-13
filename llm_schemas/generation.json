@@ -3,11 +3,11 @@
     "answer_options": [
         {
             "text": "Text for the first answer option.",
-            "is_correct": false
+            "is_correct": true
         },
         {
             "text": "Text for the second answer option.",
-            "is_correct": true
+            "is_correct": false
         },
         {
             "text": "Text for the third answer option.",

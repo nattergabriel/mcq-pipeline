@@ -48,10 +48,12 @@ paths:
 experiments:
   - name: "testing"
     prompt_file: "prompts/generation/baseline.txt"
-    schema_file: "schemas/mcq.json"
+    generation_schema_file: "llm_schemas/generation.json"
     model: "mistral-small-3.2-24b"
-    temperature: 0.8
-    num_questions: 5
+    temperature: 0.75
+    num_questions: 1
+    pages_per_chunk: 13
+    chunk_overlap: 1
 ```
 
 ### 2. Add PDFs
