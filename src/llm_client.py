@@ -22,8 +22,8 @@ class LLMClient:
         setting up the API client.
         """
         load_dotenv()
-        base_url = os.getenv("AQUEDUCT_BASE_URL")
-        api_key = os.getenv("AQUEDUCT_TOKEN")
+        base_url = os.getenv("OPENAI_BASE_URL")
+        api_key = os.getenv("OPENAI_API_KEY")
 
         if not base_url or not api_key:
             raise ValueError("Base URL or token not set in .env file.")

@@ -22,11 +22,11 @@ pip install -r requirements.txt
 ### 3. Set up Environment Variables
 
 Create a file named `.env` in the root of the project by copying the example template (`.env.example`).
-Then open the `.env` file and add your specific API credentials. You can get the necessary credentials from the [Aqueduct AI Gateway](https://aqueduct.ai.datalab.tuwien.ac.at/).
+Then open it and add your API credentials. You can use any OpenAI-compatible API endpoint (e.g., [Aqueduct AI Gateway](https://aqueduct.ai.datalab.tuwien.ac.at/), OpenAI, etc.).
 
 ```bash
-AQUEDUCT_BASE_URL="your-api-base-url"
-AQUEDUCT_TOKEN="your-secret-api-token"
+OPENAI_BASE_URL="your-api-base-url"
+OPENAI_API_KEY="your-api-key"
 ```
 
 ## Usage
