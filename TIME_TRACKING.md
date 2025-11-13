@@ -59,6 +59,7 @@ This log tracks the time spent on the bachelor's thesis.
 | 03.11.25 | 11 | Thesis writing |
 | 04.11.25 | 3 | Thesis writing |
 | 04.11.25 | 1 | Meeting |
+| 13.11.25 | 6.5 | Coding |
 
 ## Notes:
 - Entries listed as `Thesis writing` also include related conceptual and structural work, such as creating diagrams, defining evaluation criteria, and preparing supporting materials.
