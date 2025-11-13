@@ -4,11 +4,14 @@ configurations.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime
 
 from src.llm_client import LLMClient
+
+logger = logging.getLogger(__name__)
 
 
 def _chunk_pages(pages: List[Dict[str, Any]], pages_per_chunk: int, overlap: int) -> List[List[Dict[str, Any]]]:
@@ -45,13 +48,17 @@ def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_
     """
     Generates MCQs for each experiment defined in the configuration.
     """
+    logger.info(
+        f"Running MCQ generation with {len(experiments)} experiment(s)")
     llm_client = LLMClient()
 
     content_files = list(extracted_content_dir.glob("*.json"))
     if not content_files:
-        print(
-            f"No extracted content files found in '{extracted_content_dir}'.")
+        logger.warning(
+            f"No extracted content files found in '{extracted_content_dir}'")
         return
+
+    logger.info(f"Found {len(content_files)} content file(s) to process")
 
     for experiment in experiments:
         name = experiment.get("name")
@@ -63,6 +70,8 @@ def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_
         pages_per_chunk = experiment.get("pages_per_chunk", None)
         chunk_overlap = experiment.get("chunk_overlap", 0)
 
+        logger.info(f"Processing experiment: {name}")
+
         try:
             # Load schema and inject into prompt template
             schema_str = json.dumps(
@@ -70,7 +79,8 @@ def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_
             system_prompt = prompt_file.read_text(
                 encoding="utf-8").replace("{SCHEMA}", schema_str)
         except (FileNotFoundError, json.JSONDecodeError) as e:
-            print(f"Error loading prompt/schema: {e}. Skipping experiment.")
+            logger.error(
+                f"Error loading prompt/schema: {e}. Skipping experiment '{name}'")
             continue
 
         all_generated_questions = []
@@ -81,17 +91,18 @@ def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_
             if pages_per_chunk and pages_per_chunk > 0:
                 page_chunks = _chunk_pages(
                     pages, pages_per_chunk, chunk_overlap)
-                print(f"Split {content_path.name} into {len(page_chunks)} chunks "
-                      f"({pages_per_chunk} pages per chunk, {chunk_overlap} overlap)")
+                logger.info(f"Split {content_path.name} into {len(page_chunks)} chunks "
+                            f"({pages_per_chunk} pages per chunk, {chunk_overlap} overlap)")
             else:
                 # Entire document as single chunk
                 page_chunks = [pages]
+                logger.info(f"Processing {content_path.name} as single chunk")
 
             # Generate questions for each chunk
             for chunk_idx, chunk in enumerate(page_chunks):
                 chunk_text = _pages_to_text(chunk)
                 page_range = f"pages {chunk[0]['page']}-{chunk[-1]['page']}"
-                print(
+                logger.info(
                     f"Processing chunk {chunk_idx + 1}/{len(page_chunks)} ({page_range}) from {content_path.name}")
 
                 # Generate num_questions per chunk
@@ -115,12 +126,14 @@ def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_
                                 "generated_at": datetime.now().isoformat()
                             }
                             all_generated_questions.append(question_data)
+                            logger.debug(
+                                f"Generated question {i+1}/{num_questions}")
                         else:
-                            print(
-                                f"Invalid schema in LLM response for question {i+1}. Skipping.")
+                            logger.warning(
+                                f"Invalid schema in LLM response for question {i+1}. Skipping")
                     except json.JSONDecodeError:
-                        print(
-                            f"Failed to decode JSON from LLM response for question {i+1}.")
+                        logger.error(
+                            f"Failed to decode JSON from LLM response for question {i+1}")
 
         if all_generated_questions:
             experiment_output_dir = mcqs_output_dir / name
@@ -130,5 +143,7 @@ def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(all_generated_questions, f,
                           indent=4, ensure_ascii=False)
-            print(
+            logger.info(
                 f"Successfully saved {len(all_generated_questions)} questions to '{output_file}'")
+        else:
+            logger.warning(f"No questions generated for experiment '{name}'")

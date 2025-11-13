@@ -3,16 +3,20 @@ Module for exporting generated MCQs from JSON format to Moodle XML format.
 """
 
 import json
+import logging
 from pathlib import Path
 from xml.dom import minidom
 from typing import List, Dict, Any
 import xml.etree.ElementTree as ET
+
+logger = logging.getLogger(__name__)
 
 
 def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) -> str:
     """
     Converts a list of question dictionaries into a Moodle XML string.
     """
+    logger.debug(f"Converting {len(questions)} questions to Moodle XML format")
     root = ET.Element("quiz")
 
     question = ET.SubElement(root, "question", type="category")
@@ -50,14 +54,15 @@ def find_and_export_mcqs(mcqs_base_dir: Path):
     Finds all "generated_mcqs.json" files recursively and converts them
     to Moodle XML format, saving the output in the same location.
     """
+    logger.info(f"Searching for MCQ files in '{mcqs_base_dir}'")
     files = list(mcqs_base_dir.rglob("generated_mcqs.json"))
 
     if not files:
-        print(
-            f"No 'generated_mcqs.json' files found in '{mcqs_base_dir}' or its subfolders.")
+        logger.warning(
+            f"No 'generated_mcqs.json' files found in '{mcqs_base_dir}' or its subfolders")
         return
 
-    print(f"Found {len(files)} result file(s) to export.")
+    logger.info(f"Found {len(files)} result file(s) to export")
 
     for path in files:
         try:
@@ -65,7 +70,8 @@ def find_and_export_mcqs(mcqs_base_dir: Path):
                 questions = json.load(f)
 
             if not questions:
-                print(f"Skipping '{path}' as it contains no questions.")
+                logger.warning(
+                    f"Skipping '{path}' as it contains no questions")
                 continue
 
             xml_content = _convert_mcqs_to_moodle_xml(
@@ -78,11 +84,11 @@ def find_and_export_mcqs(mcqs_base_dir: Path):
             with open(xml_output_path, "wb") as f:
                 f.write(xml_content)
 
-            print(
+            logger.info(
                 f"Successfully exported {len(questions)} questions to '{xml_output_path}'")
 
         except (IOError, json.JSONDecodeError) as e:
-            print(f"Failed to process '{path}': {e}")
+            logger.error(f"Failed to process '{path}': {e}")
         except Exception as e:
-            print(
+            logger.error(
                 f"An unexpected error occurred while processing '{path}': {e}")

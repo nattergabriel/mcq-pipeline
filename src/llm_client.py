@@ -3,9 +3,12 @@ Provides a client to interact with an OpenAI-compatible Large Language Model API
 """
 
 import os
+import logging
 from openai import OpenAI, APIError
 from typing import Optional
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 
 class LLMClient:
@@ -33,6 +36,8 @@ class LLMClient:
         """
         Sends a request to the LLM and returns the response content.
         """
+        logger.debug(
+            f"Calling LLM with model: {model}, temperature: {temperature}")
         try:
             response = self._client.chat.completions.create(
                 model=model,
@@ -42,6 +47,8 @@ class LLMClient:
                 ],
                 temperature=temperature)
 
+            logger.debug("LLM call successful")
             return response.choices[0].message.content
         except APIError as e:
-            print(f"The API returned an error: {e}")
+            logger.error(f"API error: {e}")
+            return None
