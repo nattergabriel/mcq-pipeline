@@ -13,21 +13,23 @@ from src.llm_client import LLMClient
 
 logger = logging.getLogger(__name__)
 
-SINGLE_STEP_SCHEMA_PATH = Path("llm_schemas/generation_single_step.json")
-TWO_STEP_QUESTION_SCHEMA_PATH = Path(
-    "llm_schemas/generation_two_step_question.json")
-TWO_STEP_DISTRACTOR_SCHEMA_PATH = Path(
-    "llm_schemas/generation_two_step_distractors.json")
+SCHEMA_PATHS = {
+    "single_step": Path("llm_schemas/generation_single_step.json"),
+    "two_step_question": Path("llm_schemas/generation_two_step_question.json"),
+    "two_step_distractor": Path("llm_schemas/generation_two_step_distractors.json"),
+}
 
 
-def _chunk_pages(pages: List[Dict[str, Any]], pages_per_chunk: int, overlap: int) -> List[List[Dict[str, Any]]]:
+def _chunk_pages(pages: List[Dict], pages_per_chunk: int, overlap: int) -> List[List[Dict]]:
     """
     Splits pages into overlapping chunks.
     """
+    if not pages:
+        return []
+
     chunks = []
     # Move forward by this amount (e.g., 5 pages - 1 overlap = 4)
     step = pages_per_chunk - overlap
-
     for i in range(0, len(pages), step):
         chunk = pages[i:i + pages_per_chunk]
         if chunk:
@@ -35,11 +37,10 @@ def _chunk_pages(pages: List[Dict[str, Any]], pages_per_chunk: int, overlap: int
         # Stop after reaching the last page
         if i + pages_per_chunk >= len(pages):
             break
-
     return chunks
 
 
-def _pages_to_text(pages: List[Dict[str, Any]]) -> str:
+def _pages_to_text(pages: List[Dict]) -> str:
     """
     Converts a list of page dictionaries to a single text string.
     """
@@ -50,188 +51,177 @@ def _pages_to_text(pages: List[Dict[str, Any]]) -> str:
     return "\n".join(all_blocks)
 
 
-def _generate_single_step(llm_client: LLMClient, system_prompt: str, chunk_text: str,
-                          model: str, temperature: float) -> Dict[str, Any]:
+def _load_prompt(prompt_file: Path, schema_file: Path) -> str:
     """
-    Generates a complete MCQ (question + correct answer + distractors) in a single LLM call.
+    Loads and formats a prompt with its schema.
     """
-    response_str = llm_client.call_llm(
-        system_message=system_prompt,
-        user_message=chunk_text,
-        model=model,
-        temperature=temperature
-    )
-    return json.loads(response_str)
+    try:
+        schema = json.dumps(
+            json.load(schema_file.open(encoding="utf-8")), indent=4)
+        # Replace {SCHEMA} placeholder in prompt template with actual schema
+        return prompt_file.read_text(encoding="utf-8").replace("{SCHEMA}", schema)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.error(f"Failed to load prompt or schema: {e}")
+        raise
 
 
-def _generate_two_step(llm_client: LLMClient, question_prompt: str, distractor_prompt: str,
-                       chunk_text: str, model: str, temperature: float) -> Dict[str, Any]:
+def _generate_single_step_mcq(llm_client: LLMClient, prompt: str, text: str, model: str, temperature: float) -> Dict:
     """
-    Generates an MCQ in two steps
+    Generates an MCQ in a single LLM call.
     """
-    # Step 1: Generate question with correct answer
-    question_response = llm_client.call_llm(
-        system_message=question_prompt,
-        user_message=chunk_text,
-        model=model,
-        temperature=temperature
-    )
-    question_data = json.loads(question_response)
-
-    # Step 2: Generate distractors
-    distractor_user_message = json.dumps({
-        "question": question_data["question_text"],
-        "correct_answer": question_data["correct_answer"]
-    }, ensure_ascii=False)
-
-    distractor_response = llm_client.call_llm(
-        system_message=distractor_prompt,
-        user_message=distractor_user_message,
-        model=model,
-        temperature=temperature
-    )
-    distractor_data = json.loads(distractor_response)
-
-    return {
-        "question_text": question_data["question_text"],
-        "answer_options": [
-            {"text": question_data["correct_answer"], "is_correct": True},
-            {"text": distractor_data["distractors"][0], "is_correct": False},
-            {"text": distractor_data["distractors"][1], "is_correct": False},
-            {"text": distractor_data["distractors"][2], "is_correct": False}
-        ]
-    }
+    try:
+        response = llm_client.call_llm(
+            system_message=prompt, user_message=text, model=model, temperature=temperature
+        )
+        return json.loads(response)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to decode LLM response: {e}")
+        return {}
 
 
-def generate_and_save_mcqs(experiments: List[Dict[str, Any]], extracted_content_dir: Path, mcqs_output_dir: Path):
+def _generate_two_step_mcq(llm_client: LLMClient, question_prompt: str, distractor_prompt: str, text: str, model: str, temperature: float,) -> Dict:
     """
-    Generates MCQs for each experiment defined in the configuration.
+    Generates an MCQ in two LLM calls.
+    """
+    try:
+        # Generate question and correct answer
+        question_response = llm_client.call_llm(
+            system_message=question_prompt, user_message=text, model=model, temperature=temperature
+        )
+        question_data = json.loads(question_response)
+
+        # Generate distractors
+        distractor_input = json.dumps(
+            {"question": question_data["question_text"],
+                "correct_answer": question_data["correct_answer"]}
+        )
+        distractor_response = llm_client.call_llm(
+            system_message=distractor_prompt,
+            user_message=distractor_input,
+            model=model,
+            temperature=temperature,
+        )
+        distractor_data = json.loads(distractor_response)
+
+        return {
+            "question_text": question_data["question_text"],
+            "answer_options": [
+                {"text": question_data["correct_answer"], "is_correct": True},
+                {"text": distractor_data["distractors"]
+                    [0], "is_correct": False},
+                {"text": distractor_data["distractors"]
+                    [1], "is_correct": False},
+                {"text": distractor_data["distractors"]
+                    [2], "is_correct": False}
+            ]
+        }
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to decode LLM response: {e}")
+        return {}
+
+
+def _generate_mcqs_for_experiment(experiment: Dict, content_files: List[Path], llm_client: LLMClient, output_dir: Path) -> List[Dict]:
+    """
+    Generates MCQs for a single experiment.
+    """
+    name = experiment.get("name")
+    mode = experiment.get("mode", "single_step")
+    model = experiment.get("model")
+    temperature = experiment.get("temperature", 0.5)
+    num_questions = experiment.get("num_questions_per_chunk", 1)
+    pages_per_chunk = experiment.get("pages_per_chunk", 0)
+    chunk_overlap = experiment.get("chunk_overlap", 0)
+
+    logger.info(f"Processing experiment: {name}")
+
+    # Load prompts
+    try:
+        if mode == "single_step":
+            prompt = _load_prompt(
+                Path(experiment["prompt_file"]), SCHEMA_PATHS["single_step"])
+            question_prompt = distractor_prompt = None
+        elif mode == "two_step":
+            question_prompt = _load_prompt(
+                Path(experiment["question_prompt_file"]
+                     ), SCHEMA_PATHS["two_step_question"]
+            )
+            distractor_prompt = _load_prompt(
+                Path(experiment["distractor_prompt_file"]
+                     ), SCHEMA_PATHS["two_step_distractor"]
+            )
+            prompt = None
+        else:
+            logger.error(f"Unknown mode '{mode}' for experiment '{name}'")
+            return []
+    except Exception:
+        return []
+
+    questions = []
+    for content_file in content_files:
+        pages = json.load(content_file.open(encoding="utf-8"))
+        # If pages_per_chunk is set, split into chunks; otherwise treat entire document as one chunk
+        chunks = _chunk_pages(pages, pages_per_chunk,
+                              chunk_overlap) if pages_per_chunk > 0 else [pages]
+
+        for chunk_idx, chunk in enumerate(chunks):
+            text = _pages_to_text(chunk)
+            page_range = f"pages {chunk[0]['page']}-{chunk[-1]['page']}"
+            logger.info(
+                f"Processing chunk {chunk_idx + 1}/{len(chunks)} ({page_range}) from {content_file.name}")
+
+            for _ in range(num_questions):
+                try:
+                    mcq = (
+                        _generate_single_step_mcq(
+                            llm_client, prompt, text, model, temperature)
+                        if mode == "single_step"
+                        else _generate_two_step_mcq(
+                            llm_client, question_prompt, distractor_prompt, text, model, temperature
+                        )
+                    )
+                    if "question_text" in mcq and "answer_options" in mcq:
+                        mcq["metadata"] = {
+                            "source_file": content_file.name,
+                            "source_pages": {"start": chunk[0]["page"], "end": chunk[-1]["page"]},
+                            "generated_at": datetime.now().isoformat(),
+                        }
+                        questions.append(mcq)
+                        logger.debug(
+                            f"Generated question for chunk {chunk_idx + 1}")
+                    else:
+                        logger.warning(
+                            f"Invalid MCQ structure for chunk {chunk_idx + 1}")
+                except Exception as e:
+                    logger.error(f"Error generating question: {e}")
+
+    if questions:
+        output_path = output_dir / name / "generated_mcqs.json"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with output_path.open("w", encoding="utf-8") as f:
+            json.dump(questions, f, indent=4, ensure_ascii=False)
+        logger.info(f"Saved {len(questions)} questions to {output_path}")
+
+    return questions
+
+
+def generate_and_save_mcqs(experiments: List[Dict], extracted_content_dir: Path, mcqs_output_dir: Path) -> None:
+    """
+    Generates and saves MCQs for all experiments.
     """
     logger.info(
-        f"Running MCQ generation with {len(experiments)} experiment(s)")
-    llm_client = LLMClient()
+        f"Starting MCQ generation for {len(experiments)} experiment(s)")
 
     content_files = list(extracted_content_dir.glob("*.json"))
     if not content_files:
-        logger.warning(
-            f"No extracted content files found in '{extracted_content_dir}'")
+        logger.warning(f"No content files found in {extracted_content_dir}")
         return
 
-    logger.info(f"Found {len(content_files)} content file(s) to process")
+    logger.info(f"Found {len(content_files)} content files")
 
+    llm_client = LLMClient()
     for experiment in experiments:
-        name = experiment.get("name")
-        mode = experiment.get("mode", "single_step")
-        model = experiment.get("model")
-        temperature = experiment.get("temperature", 0.5)
-        num_questions = experiment.get("num_questions_per_chunk", 1)
-        pages_per_chunk = experiment.get("pages_per_chunk", None)
-        chunk_overlap = experiment.get("chunk_overlap", 0)
-
-        logger.info(f"Processing experiment: {name}")
-
-        try:
-            if mode == "single_step":
-                prompt_file = Path(experiment.get("prompt_file"))
-                schema_str = json.dumps(
-                    json.load(open(SINGLE_STEP_SCHEMA_PATH, "r", encoding="utf-8")), indent=4)
-                system_prompt = prompt_file.read_text(
-                    encoding="utf-8").replace("{SCHEMA}", schema_str)
-                question_prompt = None
-                distractor_prompt = None
-
-            elif mode == "two_step":
-                question_prompt_file = Path(
-                    experiment.get("question_prompt_file"))
-                distractor_prompt_file = Path(
-                    experiment.get("distractor_prompt_file"))
-
-                question_schema_str = json.dumps(
-                    json.load(open(TWO_STEP_QUESTION_SCHEMA_PATH, "r", encoding="utf-8")), indent=4)
-                distractor_schema_str = json.dumps(
-                    json.load(open(TWO_STEP_DISTRACTOR_SCHEMA_PATH, "r", encoding="utf-8")), indent=4)
-
-                question_prompt = question_prompt_file.read_text(
-                    encoding="utf-8").replace("{SCHEMA}", question_schema_str)
-                distractor_prompt = distractor_prompt_file.read_text(
-                    encoding="utf-8").replace("{SCHEMA}", distractor_schema_str)
-                system_prompt = None
-            else:
-                logger.error(
-                    f"Unknown mode '{mode}' for experiment '{name}'. Skipping.")
-                continue
-
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            logger.error(
-                f"Error loading prompt/schema: {e}. Skipping experiment '{name}'")
-            continue
-
-        all_generated_questions = []
-        for content_path in content_files:
-            pages = json.load(open(content_path, "r", encoding="utf-8"))
-
-            # Split into chunks or process entire document as one chunk
-            if pages_per_chunk and pages_per_chunk > 0:
-                page_chunks = _chunk_pages(
-                    pages, pages_per_chunk, chunk_overlap)
-                logger.info(f"Split {content_path.name} into {len(page_chunks)} chunks "
-                            f"({pages_per_chunk} pages per chunk, {chunk_overlap} overlap)")
-            else:
-                # Entire document as single chunk
-                page_chunks = [pages]
-                logger.info(f"Processing {content_path.name} as single chunk")
-
-            # Generate questions for each chunk
-            for chunk_idx, chunk in enumerate(page_chunks):
-                chunk_text = _pages_to_text(chunk)
-                page_range = f"pages {chunk[0]['page']}-{chunk[-1]['page']}"
-                logger.info(
-                    f"Processing chunk {chunk_idx + 1}/{len(page_chunks)} ({page_range}) from {content_path.name}")
-
-                # Generate num_questions per chunk
-                for i in range(num_questions):
-                    try:
-                        if mode == "single_step":
-                            question_data = _generate_single_step(
-                                llm_client, system_prompt, chunk_text, model, temperature)
-                        else:
-                            question_data = _generate_two_step(
-                                llm_client, question_prompt, distractor_prompt,
-                                chunk_text, model, temperature)
-
-                        # Validate structure
-                        if "question_text" in question_data and "answer_options" in question_data:
-                            # Add metadata to track where question came from
-                            question_data["metadata"] = {
-                                "source_file": content_path.name,
-                                "source_pages": {
-                                    "start": chunk[0]["page"],
-                                    "end": chunk[-1]["page"]
-                                },
-                                "generated_at": datetime.now().isoformat()
-                            }
-                            all_generated_questions.append(question_data)
-                            logger.debug(
-                                f"Generated question {i+1}/{num_questions}")
-                        else:
-                            logger.warning(
-                                f"Invalid schema in LLM response for question {i+1}. Skipping")
-                    except json.JSONDecodeError as e:
-                        logger.error(
-                            f"Failed to decode JSON from LLM response for question {i+1}: {e}")
-                    except Exception as e:
-                        logger.error(
-                            f"Error generating question {i+1}: {e}")
-
-        if all_generated_questions:
-            experiment_output_dir = mcqs_output_dir / name
-            experiment_output_dir.mkdir(parents=True, exist_ok=True)
-            output_file = experiment_output_dir / "generated_mcqs.json"
-
-            with open(output_file, "w", encoding="utf-8") as f:
-                json.dump(all_generated_questions, f,
-                          indent=4, ensure_ascii=False)
-            logger.info(
-                f"Successfully saved {len(all_generated_questions)} questions to '{output_file}'")
-        else:
-            logger.warning(f"No questions generated for experiment '{name}'")
+        questions = _generate_mcqs_for_experiment(
+            experiment, content_files, llm_client, mcqs_output_dir)
+        if not questions:
+            logger.warning(
+                f"No questions generated for experiment '{experiment.get('name')}'")
