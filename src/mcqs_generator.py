@@ -1,6 +1,6 @@
 """
-Module for generating MCQs using an LLM, based on extracted PDF content and specified experiment
-configurations.
+Module for generating MCQs using an LLM, based on extracted PDF content and specified
+experiment configurations.
 """
 
 import json
@@ -219,6 +219,7 @@ def generate_and_save_mcqs(experiments: List[Dict], extracted_content_dir: Path,
     logger.info(f"Found {len(content_files)} content files")
 
     llm_client = LLMClient()
+
     for experiment in experiments:
         questions = _generate_mcqs_for_experiment(
             experiment, content_files, llm_client, mcqs_output_dir)

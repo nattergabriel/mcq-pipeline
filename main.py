@@ -9,6 +9,7 @@ from pathlib import Path
 
 from src.pdf_extractor import extract_and_save_pdfs
 from src.mcqs_generator import generate_and_save_mcqs
+from src.mcqs_evaluator import evaluate_and_save_mcqs
 from src.mcqs_exporter import find_and_export_mcqs
 
 logging.basicConfig(
@@ -62,6 +63,10 @@ def _setup_parser() -> argparse.ArgumentParser:
         help="Generate MCQs from extracted text using strategies in config.yaml.")
 
     subparsers.add_parser(
+        "evaluate",
+        help="Evaluate generated MCQs using quality criteria.")
+
+    subparsers.add_parser(
         "export",
         help="Export generated MCQs to Moodle XML format.")
 
@@ -109,6 +114,25 @@ def _run_generate(config: dict):
         mcqs_output_dir=mcqs_output_dir)
 
 
+def _run_evaluate(config: dict):
+    """
+    Reads paths and evaluation settings from the config and calls the main evaluator function.
+    """
+    logger.info("Starting MCQ evaluation")
+    output_dir = config.get("output_dir")
+    evaluation_config = config.get("evaluation", {})
+
+    if not output_dir or not evaluation_config:
+        logger.error(
+            "'output_dir' and/or 'evaluation' not defined in config.yaml")
+        return
+
+    mcqs_output_dir = Path(output_dir) / "mcqs"
+    evaluate_and_save_mcqs(
+        evaluation_config=evaluation_config,
+        mcqs_dir=mcqs_output_dir)
+
+
 def _run_export(config: dict):
     """
     Reads the output directory path from the config and calls the main export
@@ -142,6 +166,7 @@ def main():
     if args.command == "run":
         _run_extract(config)
         _run_generate(config)
+        _run_evaluate(config)
         _run_export(config)
 
     elif args.command == "extract":
@@ -149,6 +174,9 @@ def main():
 
     elif args.command == "generate":
         _run_generate(config)
+
+    elif args.command == "evaluate":
+        _run_evaluate(config)
 
     elif args.command == "export":
         _run_export(config)
