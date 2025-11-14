@@ -100,11 +100,7 @@ def evaluate_and_save_mcqs(evaluation_config: Dict, mcqs_dir: Path) -> None:
             logger.info(f"Evaluating MCQ {idx}/{len(mcqs)}")
 
             evaluation = _evaluate_single_mcq(
-                llm_client,
-                prompt,
-                mcq,
-                model,
-                temperature)
+                llm_client, prompt, mcq, model, temperature)
 
             if evaluation:
                 # Append evaluation to the MCQ

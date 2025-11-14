@@ -14,7 +14,7 @@ from src.mcqs_exporter import find_and_export_mcqs
 
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s'
+    format="[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -108,10 +108,7 @@ def _run_generate(config: dict):
     extracted_content_dir = Path(output_dir) / "extracted_pdfs"
     mcqs_output_dir = Path(output_dir) / "mcqs"
 
-    generate_and_save_mcqs(
-        experiments=experiments,
-        extracted_content_dir=extracted_content_dir,
-        mcqs_output_dir=mcqs_output_dir)
+    generate_and_save_mcqs(experiments, extracted_content_dir, mcqs_output_dir)
 
 
 def _run_evaluate(config: dict):
@@ -128,9 +125,7 @@ def _run_evaluate(config: dict):
         return
 
     mcqs_output_dir = Path(output_dir) / "mcqs"
-    evaluate_and_save_mcqs(
-        evaluation_config=evaluation_config,
-        mcqs_dir=mcqs_output_dir)
+    evaluate_and_save_mcqs(evaluation_config, mcqs_output_dir)
 
 
 def _run_export(config: dict):
@@ -140,6 +135,8 @@ def _run_export(config: dict):
     """
     logger.info("Starting MCQ export")
     output_dir = config.get("output_dir")
+    evaluation_config = config.get("evaluation", {})
+    criteria_weights = evaluation_config.get("criteria_weights", {})
 
     if not output_dir:
         logger.error("'output_dir' not defined in config.yaml")
@@ -147,7 +144,7 @@ def _run_export(config: dict):
 
     # Export reads from output_dir/mcqs
     mcqs_output_dir = Path(output_dir) / "mcqs"
-    find_and_export_mcqs(mcqs_output_dir)
+    find_and_export_mcqs(mcqs_output_dir, criteria_weights)
 
 
 def main():

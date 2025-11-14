@@ -1,5 +1,5 @@
 """
-Module for exporting generated MCQs from JSON format to Moodle XML format.
+Module for exporting evaluated MCQs from JSON format to Moodle XML format.
 """
 
 import json
@@ -10,6 +10,30 @@ from typing import List, Dict, Any
 import xml.etree.ElementTree as ET
 
 logger = logging.getLogger(__name__)
+
+EVALUATION_METRICS = ["clarity", "correctness",
+                      "distractor_quality", "relevance"]
+
+
+def _should_export_question(question: Dict[str, Any], weights: Dict[str, float]) -> bool:
+    """
+    Checks if a question should be exported based on evaluation scores.
+    Requirements: weighted average score >= 1.5 and no score is 0.
+    """
+    scores = []
+    total_weight = 0.0
+    for metric in EVALUATION_METRICS:
+        if "evaluation" in question and metric in question["evaluation"]:
+            score = question["evaluation"][metric]["score"]
+            if score == 0:
+                return False
+            weight = weights.get(metric, 1.0)
+            scores.append(score * weight)
+            total_weight += weight
+    if not scores:
+        return False
+    weighted_avg = sum(scores) / total_weight
+    return weighted_avg >= 1.5
 
 
 def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) -> str:
@@ -49,46 +73,55 @@ def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) 
     return parsed_xml.toprettyxml(indent="  ", encoding="utf-8")
 
 
-def find_and_export_mcqs(mcqs_base_dir: Path):
+def _process_mcqs_file(path: Path, weights: Dict[str, float]) -> None:
     """
-    Finds all "generated_mcqs.json" files recursively and converts them
-    to Moodle XML format, saving the output in the same location.
+    Processes a single evaluated_mcqs.json file: loads, filters, converts, and exports.
     """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            questions = json.load(f)
+
+        questions = [
+            q for q in questions if _should_export_question(q, weights)]
+
+        if not questions:
+            logger.warning(
+                f"Skipping '{path}' as it contains no qualifying questions")
+            return
+
+        xml_content = _convert_mcqs_to_moodle_xml(questions, path.parent.name)
+
+        xml_output_path = path.with_name("exported_mcqs.xml")
+
+        with open(xml_output_path, "wb") as f:
+            f.write(xml_content)
+
+        logger.info(
+            f"Successfully exported {len(questions)} questions to '{xml_output_path}'")
+
+    except (IOError, json.JSONDecodeError) as e:
+        logger.error(f"Failed to process '{path}': {e}")
+    except Exception as e:
+        logger.error(
+            f"An unexpected error occurred while processing '{path}': {e}")
+
+
+def find_and_export_mcqs(mcqs_base_dir: Path, criteria_weights: Dict[str, float]):
+    """
+    Finds all "evaluated_mcqs.json" files recursively and processes them for export.
+    Only exports questions that meet the evaluation criteria.
+    """
+    logger.info(f"Using evaluation weights: {criteria_weights}")
+
     logger.info(f"Searching for MCQ files in '{mcqs_base_dir}'")
-    files = list(mcqs_base_dir.rglob("generated_mcqs.json"))
+    files = list(mcqs_base_dir.rglob("evaluated_mcqs.json"))
 
     if not files:
         logger.warning(
-            f"No 'generated_mcqs.json' files found in '{mcqs_base_dir}' or its subfolders")
+            f"No 'evaluated_mcqs.json' files found in '{mcqs_base_dir}' or its subfolders")
         return
 
     logger.info(f"Found {len(files)} result file(s) to export")
 
     for path in files:
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                questions = json.load(f)
-
-            if not questions:
-                logger.warning(
-                    f"Skipping '{path}' as it contains no questions")
-                continue
-
-            xml_content = _convert_mcqs_to_moodle_xml(
-                questions=questions,
-                category=path.parent.name
-            )
-
-            xml_output_path = path.with_name("exported_mcqs.xml")
-
-            with open(xml_output_path, "wb") as f:
-                f.write(xml_content)
-
-            logger.info(
-                f"Successfully exported {len(questions)} questions to '{xml_output_path}'")
-
-        except (IOError, json.JSONDecodeError) as e:
-            logger.error(f"Failed to process '{path}': {e}")
-        except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while processing '{path}': {e}")
+        _process_mcqs_file(path, criteria_weights)
