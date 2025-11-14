@@ -33,3 +33,4 @@ evaluation:
     clarity: 1.0
     correctness: 1.0
     distractor_quality: 1.0
+    relevance: 1.0

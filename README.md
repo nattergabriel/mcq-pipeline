@@ -51,7 +51,8 @@ This is the easiest and recommended way to use the tool. This single command wil
 
 1. Extract content from all PDFs.
 2. Generate MCQs based on your defined experiments.
-3. Export the generated questions to Moodle XML.
+3. Evaluate the generated MCQs using quality criteria.
+4. Export the evaluated questions to Moodle XML.
 
 ```bash
 python main.py run
@@ -59,7 +60,7 @@ python main.py run
 
 #### Workflow 2: Run Each Step Individually
 
-This approach is useful when you only need to perform a specific part of the process, such as re-running the generation step with different parameters.
+This approach is useful when you only need to perform a specific part of the process, such as re-running the export step with different weights.
 
 1. Extract Content from PDFs
 
@@ -77,9 +78,19 @@ This approach is useful when you only need to perform a specific part of the pro
    python main.py generate
    ```
 
-3. Export Generated Questions
+3. Evaluate Generated MCQs
 
-   This command converts the generated questions for all completed experiments into Moodle-compatible XML files. It automatically searches `output_dir/mcqs/` and processes any file named `generated_mcqs.json` found in the experiment subfolders.
+   This command evaluates the generated MCQs using the criteria and model defined in the `evaluation` section of your `config.yaml`. The evaluation assesses each question on multiple quality dimensions (clarity, correctness and distractor_quality). The evaluated questions are saved as `evaluated_mcqs.json` in each experiment subfolder.
+
+   ```bash
+   python main.py evaluate
+   ```
+
+4. Export Evaluated Questions
+
+   This command converts the evaluated questions for all experiments into Moodle-compatible XML files. It automatically searches `output_dir/mcqs/` and processes any file named `evaluated_mcqs.json`. Only questions that meet the quality criteria are exported:
+   - The weighted average score across all evaluation metrics must be ≥ 1.5
+   - No individual metric score can be 0
 
    ```bash
    python main.py export
