@@ -92,6 +92,10 @@ This approach is useful when you only need to perform a specific part of the pro
    - The weighted average score across all evaluation metrics must be ≥ 1.5
    - No individual metric score can be 0
 
+   **Notes:**
+   - The exported questions will be categorized by their source PDF filename in Moodle, so choosing descriptive and properly formatted filenames for your input PDFs is recommended.
+   - In the generated and evaluated JSON files, the correct answer is always listed first. However, when imported into Moodle, the answer options are automatically shuffled.
+
    ```bash
    python main.py export
    ```

@@ -60,7 +60,7 @@ def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) 
         questiontext_text.text = q_data["question_text"]
 
         ET.SubElement(question, "single").text = "true"
-        ET.SubElement(question, "shuffleanswers").text = "true"
+        ET.SubElement(question, "shuffleanswers").text = "1"
 
         for option in q_data["answer_options"]:
             fraction = "100" if option.get("is_correct", False) else "0"

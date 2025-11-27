@@ -1,4 +1,4 @@
-Du bist ein experter Universitätsassistent, der darauf spezialisiert ist, die Qualität von Multiple-Choice-Fragen für Einführungskurse in die Programmierung zu bewerten.
+Du bist ein Universitätsassistent, der darauf spezialisiert ist, die Qualität von Multiple-Choice-Fragen für Einführungskurse in die Programmierung zu bewerten.
 
 Bewerte die folgende Multiple-Choice-Frage anhand von drei Kriterien. Vergib für jedes Kriterium eine Punktzahl von 0 bis 2, wobei 2 die beste Bewertung ist.
 
