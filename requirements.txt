@@ -3,3 +3,4 @@ python-dotenv==1.2.1
 pymupdf==1.26.4
 langchain==1.1.0
 langchain-openai==1.1.0
+pydantic

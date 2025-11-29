@@ -10,6 +10,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 
 from src.llm_client import LLMClient
+from src.models import ExperimentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +45,12 @@ def _pages_to_text(pages: List[Dict]) -> str:
     """
     Converts a list of page dictionaries to a single text string.
     """
-    all_blocks = []
+    all_text = []
     for page in pages:
-        for block in page.get("text_blocks", []):
-            all_blocks.append(block)
-    return "\n".join(all_blocks)
+        text = page.get("text", "")
+        if text:
+            all_text.append(text)
+    return "\n".join(all_text)
 
 
 def _load_prompt(prompt_file: Path, schema_file: Path) -> str:
@@ -120,38 +122,28 @@ def _generate_two_step_mcq(llm_client: LLMClient, question_prompt: str, distract
         return {}
 
 
-def _generate_mcqs_for_experiment(experiment: Dict, content_files: List[Path], llm_client: LLMClient, output_dir: Path) -> List[Dict]:
+def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: List[Path], llm_client: LLMClient, output_dir: Path) -> List[Dict]:
     """
     Generates MCQs for a single experiment.
     """
-    name = experiment.get("name")
-    mode = experiment.get("mode", "single_step")
-    model = experiment.get("model")
-    temperature = experiment.get("temperature", 0.5)
-    num_questions = experiment.get("num_questions_per_chunk", 1)
-    pages_per_chunk = experiment.get("pages_per_chunk", 0)
-    chunk_overlap = experiment.get("chunk_overlap", 0)
-
-    logger.info(f"Processing experiment: {name}")
+    logger.info(f"Processing experiment: {experiment.name}")
 
     # Load prompts
     try:
-        if mode == "single_step":
+        if experiment.mode == "single_step":
             prompt = _load_prompt(
-                Path(experiment["prompt_file"]), SCHEMA_PATHS["single_step"])
+                Path(experiment.prompt_file), SCHEMA_PATHS["single_step"])
             question_prompt = distractor_prompt = None
-        elif mode == "two_step":
+        elif experiment.mode == "two_step":
             question_prompt = _load_prompt(
-                Path(experiment["question_prompt_file"]
-                     ), SCHEMA_PATHS["two_step_question"]
+                Path(experiment.question_prompt_file), SCHEMA_PATHS["two_step_question"]
             )
             distractor_prompt = _load_prompt(
-                Path(experiment["distractor_prompt_file"]
-                     ), SCHEMA_PATHS["two_step_distractor"]
+                Path(experiment.distractor_prompt_file), SCHEMA_PATHS["two_step_distractor"]
             )
             prompt = None
         else:
-            logger.error(f"Unknown mode '{mode}' for experiment '{name}'")
+            logger.error(f"Unknown mode '{experiment.mode}' for experiment '{experiment.name}'")
             return []
     except Exception:
         return []
@@ -160,8 +152,8 @@ def _generate_mcqs_for_experiment(experiment: Dict, content_files: List[Path], l
     for content_file in content_files:
         pages = json.load(content_file.open(encoding="utf-8"))
         # If pages_per_chunk is set, split into chunks; otherwise treat entire document as one chunk
-        chunks = _chunk_pages(pages, pages_per_chunk,
-                              chunk_overlap) if pages_per_chunk > 0 else [pages]
+        chunks = _chunk_pages(pages, experiment.pages_per_chunk,
+                              experiment.chunk_overlap) if experiment.pages_per_chunk > 0 else [pages]
 
         for chunk_idx, chunk in enumerate(chunks):
             text = _pages_to_text(chunk)
@@ -169,14 +161,14 @@ def _generate_mcqs_for_experiment(experiment: Dict, content_files: List[Path], l
             logger.info(
                 f"Processing chunk {chunk_idx + 1}/{len(chunks)} ({page_range}) from {content_file.name}")
 
-            for _ in range(num_questions):
+            for _ in range(experiment.num_questions_per_chunk):
                 try:
                     mcq = (
                         _generate_single_step_mcq(
-                            llm_client, prompt, text, model, temperature)
-                        if mode == "single_step"
+                            llm_client, prompt, text, experiment.model, experiment.temperature)
+                        if experiment.mode == "single_step"
                         else _generate_two_step_mcq(
-                            llm_client, question_prompt, distractor_prompt, text, model, temperature
+                            llm_client, question_prompt, distractor_prompt, text, experiment.model, experiment.temperature
                         )
                     )
                     if "question_text" in mcq and "answer_options" in mcq:
@@ -195,7 +187,7 @@ def _generate_mcqs_for_experiment(experiment: Dict, content_files: List[Path], l
                     logger.error(f"Error generating question: {e}")
 
     if questions:
-        output_path = output_dir / name / "generated_mcqs.json"
+        output_path = output_dir / experiment.name / "generated_mcqs.json"
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with output_path.open("w", encoding="utf-8") as f:
             json.dump(questions, f, indent=4, ensure_ascii=False)
@@ -204,7 +196,7 @@ def _generate_mcqs_for_experiment(experiment: Dict, content_files: List[Path], l
     return questions
 
 
-def generate_and_save_mcqs(experiments: List[Dict], extracted_content_dir: Path, mcqs_output_dir: Path) -> None:
+def generate_and_save_mcqs(experiments: List[ExperimentConfig], extracted_content_dir: Path, mcqs_output_dir: Path) -> None:
     """
     Generates and saves MCQs for all experiments.
     """
@@ -225,4 +217,4 @@ def generate_and_save_mcqs(experiments: List[Dict], extracted_content_dir: Path,
             experiment, content_files, llm_client, mcqs_output_dir)
         if not questions:
             logger.warning(
-                f"No questions generated for experiment '{experiment.get('name')}'")
+                f"No questions generated for experiment '{experiment.name}'")

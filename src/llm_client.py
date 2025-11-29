@@ -28,7 +28,7 @@ class LLMClient:
         if not base_url or not api_key:
             raise ValueError("Base URL or token not set in .env file.")
 
-        self._client = OpenAI(base_url, api_key)
+        self._client = OpenAI(base_url=base_url, api_key=api_key)
 
     def call_llm(self, system_message: str, user_message: str, model: str, temperature: float = 0.5) -> Optional[str]:
         """

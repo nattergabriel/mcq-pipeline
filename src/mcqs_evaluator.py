@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 from src.llm_client import LLMClient
+from src.models import EvaluationConfig
 
 logger = logging.getLogger(__name__)
 
@@ -57,16 +58,14 @@ def _evaluate_single_mcq(llm_client: LLMClient, prompt: str, mcq: Dict, model: s
         return {}
 
 
-def evaluate_and_save_mcqs(evaluation_config: Dict, mcqs_dir: Path) -> None:
+def evaluate_and_save_mcqs(evaluation_config: EvaluationConfig, mcqs_dir: Path) -> None:
     """
     Evaluates MCQs for all experiment setups and saves results with evaluations appended.
     """
     logger.info("Starting MCQ evaluation")
 
-    prompt_file = Path(evaluation_config["prompt_file"])
+    prompt_file = Path(evaluation_config.prompt_file)
     schema_file = Path("llm_schemas/evaluation.json")
-    model = evaluation_config.get("model")
-    temperature = evaluation_config.get("temperature", 0.3)
 
     try:
         prompt = _load_prompt(prompt_file, schema_file)
@@ -100,7 +99,7 @@ def evaluate_and_save_mcqs(evaluation_config: Dict, mcqs_dir: Path) -> None:
             logger.info(f"Evaluating MCQ {idx}/{len(mcqs)}")
 
             evaluation = _evaluate_single_mcq(
-                llm_client, prompt, mcq, model, temperature)
+                llm_client, prompt, mcq, evaluation_config.model, evaluation_config.temperature)
 
             if evaluation:
                 # Append evaluation to the MCQ

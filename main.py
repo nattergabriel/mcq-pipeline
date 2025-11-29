@@ -6,6 +6,9 @@ import yaml
 import argparse
 import logging
 from pathlib import Path
+from pydantic import ValidationError
+
+from src.models import AppConfig
 
 from src.pdf_extractor import extract_and_save_pdfs
 from src.mcqs_generator import generate_and_save_mcqs
@@ -21,13 +24,14 @@ logger = logging.getLogger(__name__)
 CONFIG_PATH = Path("config.yaml")
 
 
-def _load_config(config_path: Path) -> dict:
+def _load_config(config_path: Path) -> AppConfig:
     """
     Load the YAML configuration file from the specified path.
     """
     try:
         with open(config_path, "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
+            config_dict = yaml.safe_load(f)
+            config = AppConfig(**config_dict)
             logger.info(
                 f"Successfully loaded configuration from '{config_path}'")
             return config
@@ -36,6 +40,9 @@ def _load_config(config_path: Path) -> dict:
         return None
     except yaml.YAMLError as e:
         logger.error(f"Parsing YAML config file: {e}")
+        return None
+    except ValidationError as e:
+        logger.error(f"Configuration validation error: {e}")
         return None
 
 
@@ -73,78 +80,66 @@ def _setup_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _run_extract(config: dict):
+def _run_extract(config: AppConfig):
     """
     Reads the necessary paths from the config file and calls the main extraction function.
     """
     logger.info("Starting PDF extraction")
-    extraction_config = config.get("extraction", {})
-    input_dir = extraction_config.get("input_pdfs_dir")
-    output_dir = config.get("output_dir")
 
-    if not input_dir or not output_dir:
+    if not config.extraction.input_pdfs_dir or not config.output_dir:
         logger.error(
             "'extraction.input_pdfs_dir' and/or 'output_dir' not defined in config.yaml")
         return
 
-    extracted_output_dir = Path(output_dir) / "extracted_pdfs"
-    extract_and_save_pdfs(Path(input_dir), extracted_output_dir)
+    extracted_output_dir = Path(config.output_dir) / "extracted_pdfs"
+    extract_and_save_pdfs(Path(config.extraction.input_pdfs_dir), extracted_output_dir)
 
 
-def _run_generate(config: dict):
+def _run_generate(config: AppConfig):
     """
     Reads paths and experiment settings from the config and calls the main generator function.
     """
     logger.info("Starting MCQ generation")
-    output_dir = config.get("output_dir")
-    generation_config = config.get("generation", {})
-    experiments = generation_config.get("experiments")
 
-    if not output_dir or not experiments:
+    if not config.output_dir or not config.generation.experiments:
         logger.error(
             "'output_dir' and/or 'generation.experiments' not defined in config.yaml")
         return
 
-    extracted_content_dir = Path(output_dir) / "extracted_pdfs"
-    mcqs_output_dir = Path(output_dir) / "mcqs"
+    extracted_content_dir = Path(config.output_dir) / "extracted_pdfs"
+    mcqs_output_dir = Path(config.output_dir) / "mcqs"
 
-    generate_and_save_mcqs(experiments, extracted_content_dir, mcqs_output_dir)
+    generate_and_save_mcqs(config.generation.experiments, extracted_content_dir, mcqs_output_dir)
 
 
-def _run_evaluate(config: dict):
+def _run_evaluate(config: AppConfig):
     """
     Reads paths and evaluation settings from the config and calls the main evaluator function.
     """
     logger.info("Starting MCQ evaluation")
-    output_dir = config.get("output_dir")
-    evaluation_config = config.get("evaluation", {})
 
-    if not output_dir or not evaluation_config:
+    if not config.output_dir or not config.evaluation:
         logger.error(
             "'output_dir' and/or 'evaluation' not defined in config.yaml")
         return
 
-    mcqs_output_dir = Path(output_dir) / "mcqs"
-    evaluate_and_save_mcqs(evaluation_config, mcqs_output_dir)
+    mcqs_output_dir = Path(config.output_dir) / "mcqs"
+    evaluate_and_save_mcqs(config.evaluation, mcqs_output_dir)
 
 
-def _run_export(config: dict):
+def _run_export(config: AppConfig):
     """
     Reads the output directory path from the config and calls the main export
     function to convert JSON files to Moodle XML.
     """
     logger.info("Starting MCQ export")
-    output_dir = config.get("output_dir")
-    evaluation_config = config.get("evaluation", {})
-    criteria_weights = evaluation_config.get("criteria_weights", {})
 
-    if not output_dir:
+    if not config.output_dir:
         logger.error("'output_dir' not defined in config.yaml")
         return
 
-    # Export reads from output_dir/mcqs
-    mcqs_output_dir = Path(output_dir) / "mcqs"
-    find_and_export_mcqs(mcqs_output_dir, criteria_weights)
+    mcqs_output_dir = Path(config.output_dir) / "mcqs"
+    find_and_export_mcqs(mcqs_output_dir, config.evaluation.criteria_weights)
 
 
 def main():
