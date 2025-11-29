@@ -6,19 +6,15 @@ experiment configurations.
 import json
 import logging
 from pathlib import Path
-from typing import List, Dict, Any
 from datetime import datetime
+from typing import List, Dict
 
-from src.llm_client import LLMClient
-from src.models import ExperimentConfig
+from langchain_core.prompts import ChatPromptTemplate
+
+from src.llm_client import get_llm_model
+from src.models import ExperimentConfig, SingleStepMCQ, TwoStepQuestion, TwoStepDistractors
 
 logger = logging.getLogger(__name__)
-
-SCHEMA_PATHS = {
-    "single_step": Path("llm_schemas/generation_single_step.json"),
-    "two_step_question": Path("llm_schemas/generation_two_step_question.json"),
-    "two_step_distractor": Path("llm_schemas/generation_two_step_distractors.json"),
-}
 
 
 def _chunk_pages(pages: List[Dict], pages_per_chunk: int, overlap: int) -> List[List[Dict]]:
@@ -53,76 +49,82 @@ def _pages_to_text(pages: List[Dict]) -> str:
     return "\n".join(all_text)
 
 
-def _load_prompt(prompt_file: Path, schema_file: Path) -> str:
+def _generate_single_step_mcq(prompt_text: str, text: str, model: str, temperature: float) -> Dict:
     """
-    Loads and formats a prompt with its schema.
-    """
-    try:
-        schema = json.dumps(
-            json.load(schema_file.open(encoding="utf-8")), indent=4)
-        # Replace {SCHEMA} placeholder in prompt template with actual schema
-        return prompt_file.read_text(encoding="utf-8").replace("{SCHEMA}", schema)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error(f"Failed to load prompt or schema: {e}")
-        raise
-
-
-def _generate_single_step_mcq(llm_client: LLMClient, prompt: str, text: str, model: str, temperature: float) -> Dict:
-    """
-    Generates an MCQ in a single LLM call.
+    Generates an MCQ in a single LLM call using LangChain.
     """
     try:
-        response = llm_client.call_llm(
-            system_message=prompt, user_message=text, model=model, temperature=temperature
-        )
-        return json.loads(response)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to decode LLM response: {e}")
+        llm = get_llm_model(model=model, temperature=temperature)
+        structured_llm = llm.with_structured_output(SingleStepMCQ)
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", prompt_text),
+            ("user", "{text}")
+        ])
+
+        chain = prompt | structured_llm
+        result = chain.invoke({"text": text})
+
+        return result.model_dump()
+    except Exception as e:
+        logger.error(f"Error generating single step MCQ: {e}")
         return {}
 
 
-def _generate_two_step_mcq(llm_client: LLMClient, question_prompt: str, distractor_prompt: str, text: str, model: str, temperature: float,) -> Dict:
+def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: str, text: str, model: str, temperature: float) -> Dict:
     """
-    Generates an MCQ in two LLM calls.
+    Generates an MCQ in two LLM calls using LangChain.
     """
     try:
-        # Generate question and correct answer
-        question_response = llm_client.call_llm(
-            system_message=question_prompt, user_message=text, model=model, temperature=temperature
-        )
-        question_data = json.loads(question_response)
+        llm = get_llm_model(model=model, temperature=temperature)
 
-        # Generate distractors
-        distractor_input = json.dumps(
-            {"question": question_data["question_text"],
-                "correct_answer": question_data["correct_answer"]}
-        )
-        distractor_response = llm_client.call_llm(
-            system_message=distractor_prompt,
-            user_message=distractor_input,
-            model=model,
-            temperature=temperature,
-        )
-        distractor_data = json.loads(distractor_response)
+        # Step 1: Generate question and correct answer
+        question_llm = llm.with_structured_output(TwoStepQuestion)
+        question_prompt = ChatPromptTemplate.from_messages([
+            ("system", question_prompt_text),
+            ("user", "{text}")
+        ])
+        question_chain = question_prompt | question_llm
+
+        question_result = question_chain.invoke({"text": text})
+
+        # Step 2: Generate distractors
+        distractor_llm = llm.with_structured_output(TwoStepDistractors)
+        distractor_prompt = ChatPromptTemplate.from_messages([
+            ("system", distractor_prompt_text),
+            ("user", "{input}")
+        ])
+        distractor_chain = distractor_prompt | distractor_llm
+
+        distractor_input = json.dumps({
+            "question": question_result.question_text,
+            "correct_answer": question_result.correct_answer
+        }, ensure_ascii=False)
+
+        distractor_result = distractor_chain.invoke(
+            {"input": distractor_input})
+
+        # Combine results
+        distractors = distractor_result.distractors
+        if len(distractors) != 3:
+            raise ValueError(
+                f"Expected exactly 3 distractors, got {len(distractors)}")
 
         return {
-            "question_text": question_data["question_text"],
+            "question_text": question_result.question_text,
             "answer_options": [
-                {"text": question_data["correct_answer"], "is_correct": True},
-                {"text": distractor_data["distractors"]
-                    [0], "is_correct": False},
-                {"text": distractor_data["distractors"]
-                    [1], "is_correct": False},
-                {"text": distractor_data["distractors"]
-                    [2], "is_correct": False}
+                {"text": question_result.correct_answer, "is_correct": True},
+                {"text": distractors[0], "is_correct": False},
+                {"text": distractors[1], "is_correct": False},
+                {"text": distractors[2], "is_correct": False}
             ]
         }
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to decode LLM response: {e}")
+    except Exception as e:
+        logger.error(f"Error generating two-step MCQ: {e}")
         return {}
 
 
-def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: List[Path], llm_client: LLMClient, output_dir: Path) -> List[Dict]:
+def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: List[Path], output_dir: Path) -> List[Dict]:
     """
     Generates MCQs for a single experiment.
     """
@@ -131,21 +133,22 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
     # Load prompts
     try:
         if experiment.mode == "single_step":
-            prompt = _load_prompt(
-                Path(experiment.prompt_file), SCHEMA_PATHS["single_step"])
-            question_prompt = distractor_prompt = None
+            prompt_text = Path(experiment.prompt_file).read_text(
+                encoding="utf-8")
+            question_prompt_text = distractor_prompt_text = None
         elif experiment.mode == "two_step":
-            question_prompt = _load_prompt(
-                Path(experiment.question_prompt_file), SCHEMA_PATHS["two_step_question"]
-            )
-            distractor_prompt = _load_prompt(
-                Path(experiment.distractor_prompt_file), SCHEMA_PATHS["two_step_distractor"]
-            )
-            prompt = None
+            question_prompt_text = Path(
+                experiment.question_prompt_file).read_text(encoding="utf-8")
+            distractor_prompt_text = Path(
+                experiment.distractor_prompt_file).read_text(encoding="utf-8")
+            prompt_text = None
         else:
-            logger.error(f"Unknown mode '{experiment.mode}' for experiment '{experiment.name}'")
+            logger.error(
+                f"Unknown mode '{experiment.mode}' for experiment '{experiment.name}'")
             return []
-    except Exception:
+    except Exception as e:
+        logger.error(
+            f"Failed to load prompts for experiment '{experiment.name}': {e}")
         return []
 
     questions = []
@@ -165,10 +168,10 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
                 try:
                     mcq = (
                         _generate_single_step_mcq(
-                            llm_client, prompt, text, experiment.model, experiment.temperature)
+                            prompt_text, text, experiment.model, experiment.temperature)
                         if experiment.mode == "single_step"
                         else _generate_two_step_mcq(
-                            llm_client, question_prompt, distractor_prompt, text, experiment.model, experiment.temperature
+                            question_prompt_text, distractor_prompt_text, text, experiment.model, experiment.temperature
                         )
                     )
                     if "question_text" in mcq and "answer_options" in mcq:
@@ -210,11 +213,9 @@ def generate_and_save_mcqs(experiments: List[ExperimentConfig], extracted_conten
 
     logger.info(f"Found {len(content_files)} content files")
 
-    llm_client = LLMClient()
-
     for experiment in experiments:
         questions = _generate_mcqs_for_experiment(
-            experiment, content_files, llm_client, mcqs_output_dir)
+            experiment, content_files, mcqs_output_dir)
         if not questions:
             logger.warning(
                 f"No questions generated for experiment '{experiment.name}'")

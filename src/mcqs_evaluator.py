@@ -4,26 +4,14 @@ Module for evaluating generated MCQs using an LLM based on quality criteria.
 
 import json
 import logging
+from typing import Dict
 from pathlib import Path
-from typing import List, Dict, Any
+from langchain_core.prompts import ChatPromptTemplate
 
-from src.llm_client import LLMClient
-from src.models import EvaluationConfig
+from src.llm_client import get_llm_model
+from src.models import EvaluationConfig, EvaluationResult
 
 logger = logging.getLogger(__name__)
-
-
-def _load_prompt(prompt_file: Path, schema_file: Path) -> str:
-    """
-    Loads and formats an evaluation prompt with its schema.
-    """
-    try:
-        schema = json.dumps(
-            json.load(schema_file.open(encoding="utf-8")), indent=4)
-        return prompt_file.read_text(encoding="utf-8").replace("{SCHEMA}", schema)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error(f"Failed to load prompt or schema: {e}")
-        raise
 
 
 def _format_mcq_for_evaluation(mcq: Dict) -> str:
@@ -42,19 +30,27 @@ def _format_mcq_for_evaluation(mcq: Dict) -> str:
     return formatted
 
 
-def _evaluate_single_mcq(llm_client: LLMClient, prompt: str, mcq: Dict, model: str, temperature: float) -> Dict:
+def _evaluate_single_mcq(prompt_text: str, mcq: Dict, model: str, temperature: float) -> Dict:
     """
-    Evaluates a single MCQ using the LLM.
+    Evaluates a single MCQ using the LLM and LangChain.
     """
     try:
-        response = llm_client.call_llm(
-            system_message=prompt,
-            user_message=_format_mcq_for_evaluation(mcq),
-            model=model,
-            temperature=temperature)
-        return json.loads(response)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to decode LLM evaluation response: {e}")
+        llm = get_llm_model(model=model, temperature=temperature)
+        structured_llm = llm.with_structured_output(EvaluationResult)
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", prompt_text),
+            ("user", "{mcq_text}")
+        ])
+
+        chain = prompt | structured_llm
+
+        mcq_text = _format_mcq_for_evaluation(mcq)
+        result = chain.invoke({"mcq_text": mcq_text})
+
+        return result.model_dump()
+    except Exception as e:
+        logger.error(f"Failed to evaluate MCQ: {e}")
         return {}
 
 
@@ -65,15 +61,12 @@ def evaluate_and_save_mcqs(evaluation_config: EvaluationConfig, mcqs_dir: Path) 
     logger.info("Starting MCQ evaluation")
 
     prompt_file = Path(evaluation_config.prompt_file)
-    schema_file = Path("llm_schemas/evaluation.json")
 
     try:
-        prompt = _load_prompt(prompt_file, schema_file)
-    except Exception:
-        logger.error("Failed to load evaluation prompt")
+        prompt_text = prompt_file.read_text(encoding="utf-8")
+    except Exception as e:
+        logger.error(f"Failed to load evaluation prompt: {e}")
         return
-
-    llm_client = LLMClient()
 
     generated_files = list(mcqs_dir.glob("*/generated_mcqs.json"))
     if not generated_files:
@@ -99,7 +92,7 @@ def evaluate_and_save_mcqs(evaluation_config: EvaluationConfig, mcqs_dir: Path) 
             logger.info(f"Evaluating MCQ {idx}/{len(mcqs)}")
 
             evaluation = _evaluate_single_mcq(
-                llm_client, prompt, mcq, evaluation_config.model, evaluation_config.temperature)
+                prompt_text, mcq, evaluation_config.model, evaluation_config.temperature)
 
             if evaluation:
                 # Append evaluation to the MCQ

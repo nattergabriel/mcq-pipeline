@@ -26,8 +26,3 @@ BEWERTUNGSSKALA:
 - 2 Punkte: Erfüllt die Erwartungen vollständig
 
 WICHTIG: Gib eine Begründung (reasoning) nur an, wenn die Punktzahl 0 oder 1 ist. Bei einer Punktzahl von 2 (perfekt) ist keine Begründung notwendig.
-
-Antworte AUSSCHLIESSLICH mit einem einzigen JSON-Objekt. Füge keine Erklärungen, Einleitungstexte oder Markdown-Formatierungen wie ```json hinzu.
-
-Deine Antwort muss exakt diesem JSON-Schema folgen:
-{SCHEMA}

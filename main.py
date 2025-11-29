@@ -3,13 +3,12 @@ Main entry point and command-line interface for the MCQ generation pipeline.
 """
 
 import yaml
-import argparse
 import logging
+import argparse
 from pathlib import Path
 from pydantic import ValidationError
 
 from src.models import AppConfig
-
 from src.pdf_extractor import extract_and_save_pdfs
 from src.mcqs_generator import generate_and_save_mcqs
 from src.mcqs_evaluator import evaluate_and_save_mcqs
@@ -92,7 +91,8 @@ def _run_extract(config: AppConfig):
         return
 
     extracted_output_dir = Path(config.output_dir) / "extracted_pdfs"
-    extract_and_save_pdfs(Path(config.extraction.input_pdfs_dir), extracted_output_dir)
+    extract_and_save_pdfs(
+        Path(config.extraction.input_pdfs_dir), extracted_output_dir)
 
 
 def _run_generate(config: AppConfig):
@@ -109,7 +109,8 @@ def _run_generate(config: AppConfig):
     extracted_content_dir = Path(config.output_dir) / "extracted_pdfs"
     mcqs_output_dir = Path(config.output_dir) / "mcqs"
 
-    generate_and_save_mcqs(config.generation.experiments, extracted_content_dir, mcqs_output_dir)
+    generate_and_save_mcqs(config.generation.experiments,
+                           extracted_content_dir, mcqs_output_dir)
 
 
 def _run_evaluate(config: AppConfig):

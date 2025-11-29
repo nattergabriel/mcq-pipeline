@@ -18,7 +18,7 @@ generation:
       mode: "two_step"
       question_prompt_file: "prompts/generation/two_step_question.txt"
       distractor_prompt_file: "prompts/generation/two_step_distractors.txt"
-      model: "mistral-small-3.2-24b"
+      model: "glm-4.6-355b"
       temperature: 0.9
       num_questions_per_chunk: 1
       pages_per_chunk: 20

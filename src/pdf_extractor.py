@@ -17,7 +17,7 @@ def extract_and_save_pdfs(input_dir: Path, output_dir: Path):
     """
     logger.info(
         f"Starting PDF extraction from '{input_dir}' to '{output_dir}'")
-    
+
     output_dir.mkdir(parents=True, exist_ok=True)
 
     pdf_files = list(input_dir.glob("*.pdf"))
