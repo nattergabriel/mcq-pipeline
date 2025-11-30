@@ -141,6 +141,7 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
                         mcq["metadata"] = {
                             "source_file": content_file.name,
                             "chunk_index": chunk_idx,
+                            "chunk_text": text,
                             "generated_at": datetime.now().isoformat(),
                         }
                         questions.append(mcq)

@@ -71,3 +71,4 @@ class EvaluationResult(BaseModel):
     clarity: EvaluationCriterion
     correctness: EvaluationCriterion
     distractor_quality: EvaluationCriterion
+    relevance: EvaluationCriterion

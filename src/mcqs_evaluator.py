@@ -30,7 +30,7 @@ def _format_mcq_for_evaluation(mcq: Dict) -> str:
     return formatted
 
 
-def _evaluate_single_mcq(prompt_text: str, mcq: Dict, model: str, temperature: float) -> Dict:
+def _evaluate_single_mcq(prompt_text: str, mcq: Dict, context: str, model: str, temperature: float) -> Dict:
     """
     Evaluates a single MCQ using the LLM and LangChain.
     """
@@ -40,13 +40,13 @@ def _evaluate_single_mcq(prompt_text: str, mcq: Dict, model: str, temperature: f
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", prompt_text),
-            ("user", "{mcq_text}")
+            ("user", "{mcq_text}\n\nKontext:\n{context}")
         ])
 
         chain = prompt | structured_llm
 
         mcq_text = _format_mcq_for_evaluation(mcq)
-        result = chain.invoke({"mcq_text": mcq_text})
+        result = chain.invoke({"mcq_text": mcq_text, "context": context})
 
         return result.model_dump()
     except Exception as e:
@@ -91,8 +91,9 @@ def evaluate_and_save_mcqs(evaluation_config: EvaluationConfig, mcqs_dir: Path) 
         for idx, mcq in enumerate(mcqs, 1):
             logger.info(f"Evaluating MCQ {idx}/{len(mcqs)}")
 
+            context = mcq.get("metadata", {}).get("chunk_text", "")
             evaluation = _evaluate_single_mcq(
-                prompt_text, mcq, evaluation_config.model, evaluation_config.temperature)
+                prompt_text, mcq, context, evaluation_config.model, evaluation_config.temperature)
 
             if evaluation:
                 # Append evaluation to the MCQ

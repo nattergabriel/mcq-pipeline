@@ -39,9 +39,7 @@ def extract_and_save_pdfs(input_dir: Path, output_dir: Path, chunk_size: int, ch
             doc.close()
 
             text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap
-            )
+                chunk_size=chunk_size, chunk_overlap=chunk_overlap)
             chunks = text_splitter.split_text(full_text)
 
             output_path = output_dir / f"{pdf_path.stem}.json"
