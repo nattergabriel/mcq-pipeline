@@ -17,38 +17,6 @@ from src.models import ExperimentConfig, SingleStepMCQ, TwoStepQuestion, TwoStep
 logger = logging.getLogger(__name__)
 
 
-def _chunk_pages(pages: List[Dict], pages_per_chunk: int, overlap: int) -> List[List[Dict]]:
-    """
-    Splits pages into overlapping chunks.
-    """
-    if not pages:
-        return []
-
-    chunks = []
-    # Move forward by this amount (e.g., 5 pages - 1 overlap = 4)
-    step = pages_per_chunk - overlap
-    for i in range(0, len(pages), step):
-        chunk = pages[i:i + pages_per_chunk]
-        if chunk:
-            chunks.append(chunk)
-        # Stop after reaching the last page
-        if i + pages_per_chunk >= len(pages):
-            break
-    return chunks
-
-
-def _pages_to_text(pages: List[Dict]) -> str:
-    """
-    Converts a list of page dictionaries to a single text string.
-    """
-    all_text = []
-    for page in pages:
-        text = page.get("text", "")
-        if text:
-            all_text.append(text)
-    return "\n".join(all_text)
-
-
 def _generate_single_step_mcq(prompt_text: str, text: str, model: str, temperature: float) -> Dict:
     """
     Generates an MCQ in a single LLM call using LangChain.
@@ -153,16 +121,11 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
 
     questions = []
     for content_file in content_files:
-        pages = json.load(content_file.open(encoding="utf-8"))
-        # If pages_per_chunk is set, split into chunks; otherwise treat entire document as one chunk
-        chunks = _chunk_pages(pages, experiment.pages_per_chunk,
-                              experiment.chunk_overlap) if experiment.pages_per_chunk > 0 else [pages]
+        chunks = json.load(content_file.open(encoding="utf-8"))
 
-        for chunk_idx, chunk in enumerate(chunks):
-            text = _pages_to_text(chunk)
-            page_range = f"pages {chunk[0]['page']}-{chunk[-1]['page']}"
+        for chunk_idx, text in enumerate(chunks):
             logger.info(
-                f"Processing chunk {chunk_idx + 1}/{len(chunks)} ({page_range}) from {content_file.name}")
+                f"Processing chunk {chunk_idx} from {content_file.name}")
 
             for _ in range(experiment.num_questions_per_chunk):
                 try:
@@ -177,7 +140,7 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
                     if "question_text" in mcq and "answer_options" in mcq:
                         mcq["metadata"] = {
                             "source_file": content_file.name,
-                            "source_pages": {"start": chunk[0]["page"], "end": chunk[-1]["page"]},
+                            "chunk_index": chunk_idx,
                             "generated_at": datetime.now().isoformat(),
                         }
                         questions.append(mcq)

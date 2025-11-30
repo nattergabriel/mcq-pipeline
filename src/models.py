@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field
 
 class ExtractionConfig(BaseModel):
     input_pdfs_dir: str
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
 
 
 class ExperimentConfig(BaseModel):
@@ -12,8 +14,6 @@ class ExperimentConfig(BaseModel):
     model: str
     temperature: float = 0.5
     num_questions_per_chunk: int = 1
-    pages_per_chunk: int = 0
-    chunk_overlap: int = 0
 
     # Optional fields (depending on mode)
     prompt_file: Optional[str] = None

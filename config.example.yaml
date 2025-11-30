@@ -2,6 +2,8 @@ output_dir: "data/output"
 
 extraction:
   input_pdfs_dir: "data/input/pdfs"
+  chunk_size: 2000
+  chunk_overlap: 200
 
 generation:
   experiments:
@@ -11,8 +13,6 @@ generation:
       model: "mistral-small-3.2-24b"
       temperature: 0.75
       num_questions_per_chunk: 1
-      pages_per_chunk: 13
-      chunk_overlap: 1
 
     - name: "setup2"
       mode: "two_step"
@@ -21,8 +21,6 @@ generation:
       model: "glm-4.6-355b"
       temperature: 0.9
       num_questions_per_chunk: 1
-      pages_per_chunk: 20
-      chunk_overlap: 1
 
 evaluation:
   prompt_file: "prompts/evaluation/baseline.txt"

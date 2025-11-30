@@ -92,7 +92,11 @@ def _run_extract(config: AppConfig):
 
     extracted_output_dir = Path(config.output_dir) / "extracted_pdfs"
     extract_and_save_pdfs(
-        Path(config.extraction.input_pdfs_dir), extracted_output_dir)
+        Path(config.extraction.input_pdfs_dir),
+        extracted_output_dir,
+        config.extraction.chunk_size,
+        config.extraction.chunk_overlap
+    )
 
 
 def _run_generate(config: AppConfig):
