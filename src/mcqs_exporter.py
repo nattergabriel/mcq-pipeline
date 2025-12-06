@@ -9,16 +9,18 @@ from xml.dom import minidom
 from typing import List, Dict, Any
 import xml.etree.ElementTree as ET
 
+from src.models import ExportConfig
+
 logger = logging.getLogger(__name__)
 
 EVALUATION_METRICS = ["clarity", "correctness",
                       "distractor_quality", "relevance"]
 
 
-def _should_export_question(question: Dict[str, Any], weights: Dict[str, float]) -> bool:
+def _should_export_question(question: Dict[str, Any], weights: Dict[str, float], min_score: float) -> bool:
     """
     Checks if a question should be exported based on evaluation scores.
-    Requirements: weighted average score >= 1.5 and no score is 0.
+    Requirements: weighted average score >= min_score and no score is 0.
     """
     scores = []
     total_weight = 0.0
@@ -33,7 +35,7 @@ def _should_export_question(question: Dict[str, Any], weights: Dict[str, float])
     if not scores:
         return False
     weighted_avg = sum(scores) / total_weight
-    return weighted_avg >= 1.5
+    return weighted_avg >= min_score
 
 
 def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) -> str:
@@ -73,7 +75,7 @@ def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) 
     return parsed_xml.toprettyxml(indent="  ", encoding="utf-8")
 
 
-def _process_mcqs_file(path: Path, weights: Dict[str, float]) -> None:
+def _process_mcqs_file(path: Path, weights: Dict[str, float], min_score: float) -> None:
     """
     Processes a single evaluated_mcqs.json file: loads, filters, converts, and exports.
     """
@@ -82,7 +84,7 @@ def _process_mcqs_file(path: Path, weights: Dict[str, float]) -> None:
             questions = json.load(f)
 
         questions = [
-            q for q in questions if _should_export_question(q, weights)]
+            q for q in questions if _should_export_question(q, weights, min_score)]
 
         if not questions:
             logger.warning(
@@ -106,12 +108,13 @@ def _process_mcqs_file(path: Path, weights: Dict[str, float]) -> None:
             f"An unexpected error occurred while processing '{path}': {e}")
 
 
-def find_and_export_mcqs(mcqs_base_dir: Path, criteria_weights: Dict[str, float]):
+def find_and_export_mcqs(mcqs_base_dir: Path, export_config: ExportConfig):
     """
     Finds all "evaluated_mcqs.json" files recursively and processes them for export.
     Only exports questions that meet the evaluation criteria.
     """
-    logger.info(f"Using evaluation weights: {criteria_weights}")
+    logger.info(
+        f"Using evaluation weights: {export_config.criteria_weights}, minimum weighted average score: {export_config.min_weighted_avg_score}")
 
     logger.info(f"Searching for MCQ files in '{mcqs_base_dir}'")
     files = list(mcqs_base_dir.rglob("evaluated_mcqs.json"))
@@ -124,4 +127,5 @@ def find_and_export_mcqs(mcqs_base_dir: Path, criteria_weights: Dict[str, float]
     logger.info(f"Found {len(files)} result file(s) to export")
 
     for path in files:
-        _process_mcqs_file(path, criteria_weights)
+        _process_mcqs_file(path, export_config.criteria_weights,
+                           export_config.min_weighted_avg_score)

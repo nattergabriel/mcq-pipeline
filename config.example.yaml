@@ -26,6 +26,9 @@ evaluation:
   prompt_file: "prompts/evaluation/baseline.txt"
   model: "mistral-small-3.2-24b"
   temperature: 0.3
+
+export:
+  min_weighted_avg_score: 1.5
   criteria_weights:
     clarity: 1.0
     correctness: 1.0

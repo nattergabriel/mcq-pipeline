@@ -144,7 +144,7 @@ def _run_export(config: AppConfig):
         return
 
     mcqs_output_dir = Path(config.output_dir) / "mcqs"
-    find_and_export_mcqs(mcqs_output_dir, config.evaluation.criteria_weights)
+    find_and_export_mcqs(mcqs_output_dir, config.export)
 
 
 def main():

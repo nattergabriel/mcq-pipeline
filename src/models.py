@@ -29,6 +29,10 @@ class EvaluationConfig(BaseModel):
     prompt_file: str
     model: str
     temperature: float = 0.5
+
+
+class ExportConfig(BaseModel):
+    min_weighted_avg_score: float
     criteria_weights: Dict[str, float]
 
 
@@ -37,6 +41,7 @@ class AppConfig(BaseModel):
     extraction: ExtractionConfig
     generation: GenerationConfig
     evaluation: EvaluationConfig
+    export: ExportConfig
 
 
 class AnswerOption(BaseModel):
