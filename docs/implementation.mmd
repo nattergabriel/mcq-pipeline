@@ -1,44 +1,44 @@
 graph TD
 
     %% Color definitions
-    classDef default fill:blue,color:white
-    classDef file fill:white,stroke:blue,color:black
+
+    classDef default fill:white,stroke:blue,color:black
+    classDef fill fill:blue,color:white
 
     %% Node definitions
 
-    Config[config.yaml]:::file
-    Env[.env]:::file
-    Prompts[Prompts *.txt]:::file
-    PDFs[Input PDFs]:::file
-    Main[main.py CLI]
-    LLM_Client[src.llm_client]
+    Config[config.yaml]
+    Env[.env]
+    Prompts["prompts/*.txt"]
+    PDFs["slides/*.pdf"]
+    Main[main.py CLI]:::fill
+    LLM_Client[src.llm_client]:::fill
     External_API[OpenAI API]
 
     %% Subgraphs for each module
 
     subgraph Extraction
-        Extractor[src.pdf_extractor]
-        Extracted_JSON[extracted_pdfs/*.json]:::file
+        Extractor[src.pdf_extractor]:::fill
+        Extracted_JSON[extracted_pdfs/*.json]
     end
 
     subgraph Generation
-        Generator[src.mcqs_generator]
-        Generated_JSON[generated_mcqs.json]:::file
+        Generator[src.mcqs_generator]:::fill
+        Generated_JSON[generated_mcqs.json]
     end
 
     subgraph Evaluation
-        Evaluator[src.mcqs_evaluator]
-        Evaluated_JSON[evaluated_mcqs.json]:::file
+        Evaluator[src.mcqs_evaluator]:::fill
+        Evaluated_JSON[evaluated_mcqs.json]
     end
 
     subgraph Export
-        Exporter[src.mcqs_exporter]
+        Exporter[src.mcqs_exporter]:::fill
         Filter{Quality Check}
-        Final_XML[exported_mcqs.xml]:::file
+        Final_XML[exported_mcqs.xml]
+        Discard[Discard Question]
     end
     
-    %% Implicit nodes (like 'Discard') can be styled here if needed
-    Discard[Discard Question]
 
     %% Workflow Connections
 
