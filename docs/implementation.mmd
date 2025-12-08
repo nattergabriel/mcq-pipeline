@@ -1,0 +1,74 @@
+graph TD
+
+    %% Color definitions
+    classDef default fill:blue,color:white
+    classDef file fill:white,stroke:blue,color:black
+
+    %% Node definitions
+
+    Config[config.yaml]:::file
+    Env[.env]:::file
+    Prompts[Prompts *.txt]:::file
+    PDFs[Input PDFs]:::file
+    Main[main.py CLI]
+    LLM_Client[src.llm_client]
+    External_API[OpenAI API]
+
+    %% Subgraphs for each module
+
+    subgraph Extraction
+        Extractor[src.pdf_extractor]
+        Extracted_JSON[extracted_pdfs/*.json]:::file
+    end
+
+    subgraph Generation
+        Generator[src.mcqs_generator]
+        Generated_JSON[generated_mcqs.json]:::file
+    end
+
+    subgraph Evaluation
+        Evaluator[src.mcqs_evaluator]
+        Evaluated_JSON[evaluated_mcqs.json]:::file
+    end
+
+    subgraph Export
+        Exporter[src.mcqs_exporter]
+        Filter{Quality Check}
+        Final_XML[exported_mcqs.xml]:::file
+    end
+    
+    %% Implicit nodes (like 'Discard') can be styled here if needed
+    Discard[Discard Question]
+
+    %% Workflow Connections
+
+    Config --> Main
+    Main -- "extract" --> Extractor
+    Main -- "generate" --> Generator
+    Main -- "evaluate" --> Evaluator
+    Main -- "export" --> Exporter
+
+    %% Data Flow Connections
+
+    PDFs --> Extractor
+    Extractor --> Extracted_JSON
+    
+    Extracted_JSON --> Generator
+    Prompts --> Generator
+    Generator --> Generated_JSON
+    
+    Generated_JSON --> Evaluator
+    Prompts --> Evaluator
+    Evaluator --> Evaluated_JSON
+    
+    Evaluated_JSON --> Exporter
+    Exporter --> Filter
+    Filter -- Yes --> Final_XML
+    Filter -- No --> Discard
+
+    %% API Interactions
+
+    Env --> LLM_Client
+    Generator --> LLM_Client
+    Evaluator --> LLM_Client
+    LLM_Client <--> External_API
