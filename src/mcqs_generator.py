@@ -12,7 +12,15 @@ from typing import List, Dict
 from langchain_core.prompts import ChatPromptTemplate
 
 from src.llm_client import get_llm_model
-from src.models import ExperimentConfig, SingleStepMCQ, SingleStepMCQWithReasoning, TwoStepQuestion, TwoStepDistractors
+from src.models import (
+    ExperimentConfig,
+    SingleStepMCQ,
+    SingleStepMCQWithReasoning,
+    TwoStepQuestion,
+    TwoStepQuestionWithReasoning,
+    TwoStepDistractors,
+    TwoStepDistractorsWithReasoning,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,15 +48,16 @@ def _generate_single_step_mcq(prompt_text: str, text: str, model: str, temperatu
         return {}
 
 
-def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: str, text: str, model: str, temperature: float) -> Dict:
+def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: str, text: str, model: str, temperature: float, capture_reasoning: bool = False) -> Dict:
     """
     Generates an MCQ in two LLM calls using LangChain.
+    If capture_reasoning is True (for Chain-of-Thought), uses models that include reasoning steps.
     """
     try:
         llm = get_llm_model(model=model, temperature=temperature)
 
         # Step 1: Generate question and correct answer
-        question_llm = llm.with_structured_output(TwoStepQuestion)
+        question_llm = llm.with_structured_output(TwoStepQuestionWithReasoning if capture_reasoning else TwoStepQuestion)
         question_prompt = ChatPromptTemplate.from_messages([
             ("system", question_prompt_text),
             ("user", "{text}")
@@ -58,7 +67,7 @@ def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: st
         question_result = question_chain.invoke({"text": text})
 
         # Step 2: Generate distractors
-        distractor_llm = llm.with_structured_output(TwoStepDistractors)
+        distractor_llm = llm.with_structured_output(TwoStepDistractorsWithReasoning if capture_reasoning else TwoStepDistractors)
         distractor_prompt = ChatPromptTemplate.from_messages([
             ("system", distractor_prompt_text),
             ("user", "{input}")
@@ -79,7 +88,7 @@ def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: st
             raise ValueError(
                 f"Expected exactly 3 distractors, got {len(distractors)}")
 
-        return {
+        result = {
             "question_text": question_result.question_text,
             "answer_options": [
                 {"text": question_result.correct_answer, "is_correct": True},
@@ -88,6 +97,12 @@ def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: st
                 {"text": distractors[2], "is_correct": False}
             ]
         }
+        
+        if capture_reasoning:
+            result["question_reasoning"] = question_result.reasoning
+            result["distractor_reasoning"] = distractor_result.reasoning
+        
+        return result
     except Exception as e:
         logger.error(f"Error generating two-step MCQ: {e}")
         return {}
@@ -135,7 +150,7 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
                             prompt_text, text, experiment.model, experiment.temperature, experiment.capture_reasoning)
                         if experiment.mode == "single_step"
                         else _generate_two_step_mcq(
-                            question_prompt_text, distractor_prompt_text, text, experiment.model, experiment.temperature
+                            question_prompt_text, distractor_prompt_text, text, experiment.model, experiment.temperature, experiment.capture_reasoning
                         )
                     )
                     if "question_text" in mcq and "answer_options" in mcq:

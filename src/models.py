@@ -70,7 +70,20 @@ class TwoStepQuestion(BaseModel):
     correct_answer: str = Field(description="The correct answer text.")
 
 
+class TwoStepQuestionWithReasoning(BaseModel):
+    reasoning: str = Field(
+        description="Step-by-step reasoning process for creating the question.")
+    question_text: str = Field(description="The text of the question.")
+    correct_answer: str = Field(description="The correct answer text.")
+
+
 class TwoStepDistractors(BaseModel):
+    distractors: List[str] = Field(description="List of distractor answers.")
+
+
+class TwoStepDistractorsWithReasoning(BaseModel):
+    reasoning: str = Field(
+        description="Step-by-step reasoning process for creating the distractors.")
     distractors: List[str] = Field(description="List of distractor answers.")
 
 

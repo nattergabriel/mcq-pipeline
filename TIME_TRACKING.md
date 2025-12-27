@@ -74,6 +74,9 @@ This log tracks the time spent on the bachelor's thesis.
 | 08.11.25 | 0.5 | Technical research |
 | 08.12.25 | 1 | Diagram |
 | 08.12.25 | 1.5 | Thesis writing |
+| 18.12.25 | 1.5 | Meeting |
+| 27.12.25 | 0.5 | Coding |
+| 27.12.25 | 5 | Technical research |
 
 ## Notes:
 - Entries listed as `Thesis writing` also include related conceptual and structural work, such as creating diagrams, defining evaluation criteria, and preparing supporting materials.
