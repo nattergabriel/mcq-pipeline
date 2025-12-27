@@ -1,23 +1,24 @@
-output_dir: "data/output"
+output_dir: "data/output" # Directory to save all outputs
 
 extraction:
-  input_pdfs_dir: "data/input/slides"
-  chunk_size: 2000
-  chunk_overlap: 200
+  input_pdfs_dir: "data/input/slides" # Directory containing input PDF files
+  chunk_size: 2000 # Size of each text chunk in characters
+  chunk_overlap: 200 # Overlap between chunks in characters
 
 generation:
   experiments:
-    - name: "setup1"
-      mode: "single_step"
-      prompt_file: "prompts/generation/single_step_baseline.txt"
+    - name: "setup1" # Experiment name, used for organizing outputs
+      mode: "single_step" # Either single_step or two_step
+      capture_reasoning: true # For Chain-of-Thought prompting only, default is false and can be omitted
+      prompt_file: "prompts/generation/chain_of_thought.txt" # For single_step mode only
       model: "mistral-small-3.2-24b"
       temperature: 0.75
       num_questions_per_chunk: 1
 
     - name: "setup2"
       mode: "two_step"
-      question_prompt_file: "prompts/generation/two_step_question.txt"
-      distractor_prompt_file: "prompts/generation/two_step_distractors.txt"
+      question_prompt_file: "prompts/generation/two_step_question.txt" # For two_step mode only
+      distractor_prompt_file: "prompts/generation/two_step_distractors.txt" # For two_step mode only
       model: "glm-4.6-355b"
       temperature: 0.9
       num_questions_per_chunk: 1
@@ -28,7 +29,7 @@ evaluation:
   temperature: 0.3
 
 export:
-  min_weighted_avg_score: 1.5
+  min_weighted_avg_score: 1.5 # Minimum average score to include MCQ in export
   criteria_weights:
     clarity: 1.0
     correctness: 1.0

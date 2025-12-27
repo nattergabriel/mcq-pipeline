@@ -14,6 +14,7 @@ class ExperimentConfig(BaseModel):
     model: str
     temperature: float = 0.5
     num_questions_per_chunk: int = 1
+    capture_reasoning: bool = False
 
     # Optional fields (depending on mode)
     prompt_file: Optional[str] = None
@@ -51,6 +52,14 @@ class AnswerOption(BaseModel):
 
 
 class SingleStepMCQ(BaseModel):
+    question_text: str = Field(description="The text of the question.")
+    answer_options: List[AnswerOption] = Field(
+        description="List of answer options.")
+
+
+class SingleStepMCQWithReasoning(BaseModel):
+    reasoning: str = Field(
+        description="Step-by-step reasoning process for creating the question.")
     question_text: str = Field(description="The text of the question.")
     answer_options: List[AnswerOption] = Field(
         description="List of answer options.")

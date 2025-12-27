@@ -12,18 +12,19 @@ from typing import List, Dict
 from langchain_core.prompts import ChatPromptTemplate
 
 from src.llm_client import get_llm_model
-from src.models import ExperimentConfig, SingleStepMCQ, TwoStepQuestion, TwoStepDistractors
+from src.models import ExperimentConfig, SingleStepMCQ, SingleStepMCQWithReasoning, TwoStepQuestion, TwoStepDistractors
 
 logger = logging.getLogger(__name__)
 
 
-def _generate_single_step_mcq(prompt_text: str, text: str, model: str, temperature: float) -> Dict:
+def _generate_single_step_mcq(prompt_text: str, text: str, model: str, temperature: float, capture_reasoning: bool = False) -> Dict:
     """
     Generates an MCQ in a single LLM call using LangChain.
+    If capture_reasoning is True (for Chain-of-Thought), uses a model that includes reasoning steps.
     """
     try:
         llm = get_llm_model(model=model, temperature=temperature)
-        structured_llm = llm.with_structured_output(SingleStepMCQ)
+        structured_llm = llm.with_structured_output(SingleStepMCQWithReasoning if capture_reasoning else SingleStepMCQ)
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", prompt_text),
@@ -131,7 +132,7 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
                 try:
                     mcq = (
                         _generate_single_step_mcq(
-                            prompt_text, text, experiment.model, experiment.temperature)
+                            prompt_text, text, experiment.model, experiment.temperature, experiment.capture_reasoning)
                         if experiment.mode == "single_step"
                         else _generate_two_step_mcq(
                             question_prompt_text, distractor_prompt_text, text, experiment.model, experiment.temperature
