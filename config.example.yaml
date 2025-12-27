@@ -1,7 +1,7 @@
 output_dir: "data/output"
 
 extraction:
-  input_pdfs_dir: "data/input/pdfs"
+  input_pdfs_dir: "data/input/slides"
   chunk_size: 2000
   chunk_overlap: 200
 

@@ -39,7 +39,7 @@ Before running the pipeline, you'll need to create your own `config.yaml` file. 
 
 ### 2. Add PDFs
 
-Place the lecture PDFs you want to process into the directory you specified for `extraction.input_pdfs_dir` in `config.yaml` (e.g., `data/input/pdfs`).
+Place the lecture PDFs you want to process into the directory you specified for `extraction.input_pdfs_dir` in `config.yaml` (e.g., `data/input/slides`).
 
 ### 3. Run the Pipeline
 
