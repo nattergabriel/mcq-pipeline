@@ -5,3 +5,6 @@ langchain
 langchain-openai
 langchain-text-splitters
 pydantic
+pandas
+matplotlib
+seaborn
