@@ -6,6 +6,7 @@ import json
 import logging
 from typing import Dict
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 from langchain_core.prompts import ChatPromptTemplate
 
 from src.llm_client import get_llm_model
@@ -54,9 +55,53 @@ def _evaluate_single_mcq(prompt_text: str, mcq: Dict, context: str, model: str, 
         return {}
 
 
+def _evaluate_file(generated_file: Path, prompt_text: str, evaluation_config: EvaluationConfig) -> None:
+    """
+    Evaluates all MCQs in a single file.
+    """
+    logger.info(f"Evaluating MCQs in {generated_file}")
+
+    try:
+        # Load generated MCQs
+        with generated_file.open("r", encoding="utf-8") as f:
+            mcqs = json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load {generated_file}: {e}")
+        return
+
+    # Evaluate each MCQ
+    evaluated_mcqs = []
+    for idx, mcq in enumerate(mcqs, 1):
+        logger.info(f"Evaluating MCQ {idx}/{len(mcqs)}")
+
+        context = mcq.get("metadata", {}).get("chunk_text", "")
+        evaluation = _evaluate_single_mcq(
+            prompt_text, mcq, context, evaluation_config.model, evaluation_config.temperature)
+
+        if evaluation:
+            # Append evaluation to the MCQ
+            mcq_with_eval = mcq.copy()
+            mcq_with_eval["evaluation"] = evaluation
+            evaluated_mcqs.append(mcq_with_eval)
+            logger.debug(f"Successfully evaluated MCQ {idx}")
+        else:
+            logger.warning(f"Failed to evaluate MCQ {idx}, skipping")
+            evaluated_mcqs.append(mcq)
+
+    # Save evaluated MCQs
+    output_file = generated_file.parent / "evaluated_mcqs.json"
+    try:
+        with output_file.open("w", encoding="utf-8") as f:
+            json.dump(evaluated_mcqs, f, indent=4, ensure_ascii=False)
+        logger.info(
+            f"Saved {len(evaluated_mcqs)} evaluated MCQs to {output_file}")
+    except Exception as e:
+        logger.error(f"Failed to save evaluated MCQs: {e}")
+
+
 def evaluate_and_save_mcqs(evaluation_config: EvaluationConfig, mcqs_dir: Path) -> None:
     """
-    Evaluates MCQs for all experiment setups and saves results with evaluations appended.
+    Evaluates MCQs for all experiment setups in parallel and saves results with evaluations appended.
     """
     logger.info("Starting MCQ evaluation")
 
@@ -75,42 +120,19 @@ def evaluate_and_save_mcqs(evaluation_config: EvaluationConfig, mcqs_dir: Path) 
 
     logger.info(f"Found {len(generated_files)} MCQ files to evaluate")
 
+    executor = ThreadPoolExecutor()
+    futures = []
+
     for generated_file in generated_files:
-        logger.info(f"Evaluating MCQs in {generated_file}")
+        future = executor.submit(
+            _evaluate_file, generated_file, prompt_text, evaluation_config)
+        futures.append(future)
 
+    # Wait for all to complete
+    for future in futures:
         try:
-            # Load generated MCQs
-            with generated_file.open("r", encoding="utf-8") as f:
-                mcqs = json.load(f)
+            future.result()
         except Exception as e:
-            logger.error(f"Failed to load {generated_file}: {e}")
-            continue
+            logger.error(f"Error processing file: {e}")
 
-        # Evaluate each MCQ
-        evaluated_mcqs = []
-        for idx, mcq in enumerate(mcqs, 1):
-            logger.info(f"Evaluating MCQ {idx}/{len(mcqs)}")
-
-            context = mcq.get("metadata", {}).get("chunk_text", "")
-            evaluation = _evaluate_single_mcq(
-                prompt_text, mcq, context, evaluation_config.model, evaluation_config.temperature)
-
-            if evaluation:
-                # Append evaluation to the MCQ
-                mcq_with_eval = mcq.copy()
-                mcq_with_eval["evaluation"] = evaluation
-                evaluated_mcqs.append(mcq_with_eval)
-                logger.debug(f"Successfully evaluated MCQ {idx}")
-            else:
-                logger.warning(f"Failed to evaluate MCQ {idx}, skipping")
-                evaluated_mcqs.append(mcq)
-
-        # Save evaluated MCQs
-        output_file = generated_file.parent / "evaluated_mcqs.json"
-        try:
-            with output_file.open("w", encoding="utf-8") as f:
-                json.dump(evaluated_mcqs, f, indent=4, ensure_ascii=False)
-            logger.info(
-                f"Saved {len(evaluated_mcqs)} evaluated MCQs to {output_file}")
-        except Exception as e:
-            logger.error(f"Failed to save evaluated MCQs: {e}")
+    executor.shutdown()

@@ -8,7 +8,7 @@ sns.set_theme(style="whitegrid", palette="muted")
 
 METRICS = ['clarity', 'correctness', 'distractor_quality', 'relevance']
 EXPERIMENTS_FOLDER = "data/output/mcqs"
-EVALUATORS_FOLDER = "data/output/a"
+EVALUATORS_FOLDER = "data/output/different_evaluators1"
 OUTPUT_FOLDER = "data/output/analysis"
 
 
