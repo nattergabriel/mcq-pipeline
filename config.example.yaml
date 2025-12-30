@@ -14,6 +14,7 @@ generation:
       model: "mistral-small-3.2-24b"
       temperature: 0.75
       num_questions_per_chunk: 1
+      max_questions_per_pdf: 5
 
     - name: "setup2"
       mode: "two_step"
@@ -22,6 +23,7 @@ generation:
       model: "glm-4.6-355b"
       temperature: 0.9
       num_questions_per_chunk: 1
+      max_questions_per_pdf: 2
 
 evaluation:
   prompt_file: "prompts/evaluation/baseline.txt"

@@ -15,6 +15,7 @@ class ExperimentConfig(BaseModel):
     temperature: float = 0.5
     num_questions_per_chunk: int = 1
     capture_reasoning: bool = False
+    max_questions_per_pdf: Optional[int] = None
 
     # Optional fields (depending on mode)
     prompt_file: Optional[str] = None

@@ -5,6 +5,7 @@ experiment configurations.
 
 import json
 import logging
+import random
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict
@@ -143,7 +144,22 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
     for content_file in content_files:
         chunks = json.load(content_file.open(encoding="utf-8"))
 
-        for chunk_idx, text in enumerate(chunks):
+        if experiment.max_questions_per_pdf is not None:
+            max_chunks = experiment.max_questions_per_pdf // experiment.num_questions_per_chunk
+            if max_chunks < len(chunks):
+                selected_indices = random.sample(
+                    range(len(chunks)), max_chunks)
+                logger.info(
+                    f"Randomly selected {max_chunks} chunks out of {len(chunks)} for {content_file.name}")
+            else:
+                # Use all chunks if limit is higher than available chunks
+                selected_indices = list(range(len(chunks)))
+        else:
+            # Also process all chunks
+            selected_indices = list(range(len(chunks)))
+
+        for chunk_idx in selected_indices:
+            text = chunks[chunk_idx]
             logger.info(
                 f"Processing chunk {chunk_idx} from {content_file.name}")
 
