@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict
+from concurrent.futures import ThreadPoolExecutor
 
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -32,7 +33,8 @@ def _generate_single_step_mcq(prompt_text: str, text: str, model: str, temperatu
     """
     try:
         llm = get_llm_model(model=model, temperature=temperature)
-        structured_llm = llm.with_structured_output(SingleStepMCQWithReasoning if capture_reasoning else SingleStepMCQ)
+        structured_llm = llm.with_structured_output(
+            SingleStepMCQWithReasoning if capture_reasoning else SingleStepMCQ)
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", prompt_text),
@@ -57,7 +59,8 @@ def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: st
         llm = get_llm_model(model=model, temperature=temperature)
 
         # Step 1: Generate question and correct answer
-        question_llm = llm.with_structured_output(TwoStepQuestionWithReasoning if capture_reasoning else TwoStepQuestion)
+        question_llm = llm.with_structured_output(
+            TwoStepQuestionWithReasoning if capture_reasoning else TwoStepQuestion)
         question_prompt = ChatPromptTemplate.from_messages([
             ("system", question_prompt_text),
             ("user", "{text}")
@@ -67,7 +70,8 @@ def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: st
         question_result = question_chain.invoke({"text": text})
 
         # Step 2: Generate distractors
-        distractor_llm = llm.with_structured_output(TwoStepDistractorsWithReasoning if capture_reasoning else TwoStepDistractors)
+        distractor_llm = llm.with_structured_output(
+            TwoStepDistractorsWithReasoning if capture_reasoning else TwoStepDistractors)
         distractor_prompt = ChatPromptTemplate.from_messages([
             ("system", distractor_prompt_text),
             ("user", "{input}")
@@ -97,11 +101,11 @@ def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: st
                 {"text": distractors[2], "is_correct": False}
             ]
         }
-        
+
         if capture_reasoning:
             result["question_reasoning"] = question_result.reasoning
             result["distractor_reasoning"] = distractor_result.reasoning
-        
+
         return result
     except Exception as e:
         logger.error(f"Error generating two-step MCQ: {e}")
@@ -181,7 +185,7 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
 
 def generate_and_save_mcqs(experiments: List[ExperimentConfig], extracted_content_dir: Path, mcqs_output_dir: Path) -> None:
     """
-    Generates and saves MCQs for all experiments.
+    Generates and saves MCQs for all experiments in parallel using multithreading.
     """
     logger.info(
         f"Starting MCQ generation for {len(experiments)} experiment(s)")
@@ -193,9 +197,23 @@ def generate_and_save_mcqs(experiments: List[ExperimentConfig], extracted_conten
 
     logger.info(f"Found {len(content_files)} content files")
 
+    executor = ThreadPoolExecutor()
+    futures = []
+
     for experiment in experiments:
-        questions = _generate_mcqs_for_experiment(
-            experiment, content_files, mcqs_output_dir)
-        if not questions:
-            logger.warning(
-                f"No questions generated for experiment '{experiment.name}'")
+        future = executor.submit(
+            _generate_mcqs_for_experiment, experiment, content_files, mcqs_output_dir)
+        futures.append((future, experiment))
+
+    # Wait for all to complete
+    for future, experiment in futures:
+        try:
+            questions = future.result()
+            if not questions:
+                logger.warning(
+                    f"No questions generated for experiment '{experiment.name}'")
+        except Exception as e:
+            logger.error(
+                f"Error processing experiment '{experiment.name}': {e}")
+
+    executor.shutdown()
