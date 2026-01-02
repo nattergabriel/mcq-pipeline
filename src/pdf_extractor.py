@@ -42,6 +42,10 @@ def extract_and_save_pdfs(input_dir: Path, output_dir: Path, chunk_size: int, ch
                 chunk_size=chunk_size, chunk_overlap=chunk_overlap)
             chunks = text_splitter.split_text(full_text)
 
+            # Pad last chunk if it's too short
+            if len(chunks) >= 2 and len(chunks[-1]) < chunk_size * 0.8:
+                chunks[-1] = full_text[-chunk_size:]
+
             output_path = output_dir / f"{pdf_path.stem}.json"
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(chunks, f, indent=4, ensure_ascii=False)
