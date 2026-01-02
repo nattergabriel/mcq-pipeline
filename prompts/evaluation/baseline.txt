@@ -12,6 +12,7 @@ Bewerte, wie verständlich und eindeutig die Frage formuliert ist.
 - Ist die Fragestellung sprachlich klar und präzise?
 - Enthält die Frage keine unnötigen, irreführenden oder mehrdeutigen Elemente?
 - Ist für Studierende eindeutig, was gefragt wird?
+- Ist die Frage eigenständig beantwortbar, ohne dass Studierende zusätzlichen Kontext benötigen? (Verweise auf "den gegebenen Code", "den obigen Text" o.Ä. sind nicht zulässig, es sei denn, der Code ist vollständig in der Frage enthalten.)
 
 2. KORREKTHEIT (0-2 Punkte)
 Bewerte die fachliche und logische Korrektheit bezogen auf den gegebenen Kontext.
