@@ -14,7 +14,6 @@ Anforderungen an die korrekte Antwort:
 - Die Antwort muss inhaltlich korrekt und vollständig sein.
 - Sie soll in einem sachlichen, präzisen Stil formuliert sein.
 - Die Antwort sollte prägnant sein und höchstens 1-2 Sätze umfassen.
-- Verwende ausschließlich Plaintext ohne Markdown-Syntax (keine ``` Code-Blöcke, keine **fett**, keine *kursiv*). Code-Snippets müssen jedoch strukturiert und lesbar sein: Verwende Zeilenumbrüche, um verschiedene Code-Zeilen zu trennen, damit die Struktur erkennbar bleibt.
 
 Beispiel 1:
 question_text="Was bedeutet es, wenn ein Sortieralgorithmus als 'stabil' bezeichnet wird?" correct_answer='Ein Sortieralgorithmus ist stabil, wenn er die relative Reihenfolge von Datensätzen mit gleichem Sortierschlüssel beibehält.'

@@ -9,7 +9,6 @@ Anforderungen an die Distraktoren:
 - Die Distraktoren dürfen nicht offensichtlich falsch sein, sondern sollen plausibel wirken.
 - Kein Distraktor darf inhaltlich korrekt sein oder die korrekte Antwort paraphrasieren.
 - Jeder Distraktor sollte prägnant sein und höchstens 1-2 Sätze umfassen.
-- Verwende ausschließlich Plaintext ohne Markdown-Syntax (keine ``` Code-Blöcke, keine **fett**, keine *kursiv*). Code-Snippets müssen jedoch strukturiert und lesbar sein: Verwende Zeilenumbrüche, um verschiedene Code-Zeilen zu trennen, damit die Struktur erkennbar bleibt.
 
 Beispiel 1:
 distractors=['Ein Sortieralgorithmus ist stabil, wenn er garantiert in O(n log n) Zeit für alle Eingaben sortiert, unabhängig von deren ursprünglicher Anordnung.', 'Ein Sortieralgorithmus ist stabil, wenn er bei der Sortierung keine zusätzlichen Speicherressourcen benötigt, also in-place arbeitet.', 'Ein Sortieralgorithmus ist stabil, wenn er sowohl aufsteigend als auch absteigend sortieren kann, ohne dass sich seine Laufzeitkomplexität ändert.']

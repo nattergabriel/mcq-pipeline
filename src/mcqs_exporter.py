@@ -57,7 +57,8 @@ def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) 
         name_text = ET.SubElement(name, "text")
         name_text.text = q_data["question_text"][:50]
 
-        questiontext = ET.SubElement(question, "questiontext")
+        questiontext = ET.SubElement(
+            question, "questiontext", format="markdown")
         questiontext_text = ET.SubElement(questiontext, "text")
         questiontext_text.text = q_data["question_text"]
 
@@ -66,7 +67,8 @@ def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) 
 
         for option in q_data["answer_options"]:
             fraction = "100" if option.get("is_correct", False) else "0"
-            answer = ET.SubElement(question, "answer", fraction=fraction)
+            answer = ET.SubElement(
+                question, "answer", fraction=fraction, format="markdown")
             answer_text = ET.SubElement(answer, "text")
             answer_text.text = option["text"]
 
