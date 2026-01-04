@@ -20,3 +20,5 @@ Anforderungen an die Frage:
 Anforderungen an die korrekte Antwort:
 - Die Antwort muss inhaltlich korrekt und vollständig sein.
 - Sie soll in einem sachlichen, präzisen Stil formuliert sein.
+- Die Antwort sollte prägnant sein und höchstens 1-2 Sätze umfassen.
+- Verwende ausschließlich Plaintext ohne jegliche Formatierungen wie Markdown, Code-Blöcke oder andere Markup-Syntax. Code-Snippets sollen direkt im Text ohne besondere Kennzeichnung stehen.

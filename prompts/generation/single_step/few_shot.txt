@@ -15,6 +15,8 @@ Anforderungen an die Antwortoptionen:
 - Die drei Distraktoren sollen auf typischen Fehlannahmen oder Missverständnissen basieren, die beim Lesen des Textes entstehen könnten.
 - Alle Antwortoptionen müssen hinsichtlich Länge, sprachlichem Stil und Abstraktionsniveau vergleichbar sein.
 - Die korrekte Antwort darf sich nicht durch Formulierungen, Detailgrad oder Wortwahl von den Distraktoren abheben.
+- Jede Antwortoption sollte prägnant sein und höchstens 1-2 Sätze umfassen.
+- Verwende ausschließlich Plaintext ohne jegliche Formatierungen wie Markdown, Code-Blöcke oder andere Markup-Syntax. Code-Snippets sollen direkt im Text ohne besondere Kennzeichnung stehen.
 
 Beispiel 1:
 question_text='Welche Schleife in Java ist charakterisiert dadurch, dass ihr Schleifenrumpf unabhängig von der Bedingung mindestens einmal durchlaufen wird, und wie wird dieser Mechanismus im Foliensatz bezeichnet?' answer_options=[AnswerOption(text='Die `while`-Schleife, da sie als kopfgesteuerte Schleife sicherstellt, dass der Schleifenrumpf mindestens einmal ausgeführt wird.', is_correct=False), AnswerOption(text='Die `do-while`-Schleife, da sie als kopfgesteuerte Schleife die Bedingung vor dem ersten Durchlauf des Schleifenrumpfs prüft.', is_correct=False), AnswerOption(text='Die `do-while`-Schleife, da sie als fußgesteuerte Schleife die Überprüfung der Bedingung nach dem ersten Durchlauf des Schleifenrumpfs vornimmt.', is_correct=True), AnswerOption(text='Die `for`-Schleife, da sie als Zählschleife dafür konzipiert ist, eine vordefinierte Anzahl von Durchläufen zu garantieren.', is_correct=False)]

@@ -15,3 +15,5 @@ Anforderungen an die Antwortoptionen:
 - Die drei Distraktoren sollen auf typischen Fehlannahmen oder Missverständnissen basieren, die beim Lesen des Textes entstehen könnten.
 - Alle Antwortoptionen müssen hinsichtlich Länge, sprachlichem Stil und Abstraktionsniveau vergleichbar sein.
 - Die korrekte Antwort darf sich nicht durch Formulierungen, Detailgrad oder Wortwahl von den Distraktoren abheben.
+- Jede Antwortoption sollte prägnant sein und höchstens 1-2 Sätze umfassen.
+- Verwende ausschließlich Plaintext ohne jegliche Formatierungen wie Markdown, Code-Blöcke oder andere Markup-Syntax. Code-Snippets sollen direkt im Text ohne besondere Kennzeichnung stehen.

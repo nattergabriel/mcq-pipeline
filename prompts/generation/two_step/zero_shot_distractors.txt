@@ -8,3 +8,5 @@ Anforderungen an die Distraktoren:
 - Alle Distraktoren müssen hinsichtlich Länge, sprachlichem Stil und Abstraktionsniveau mit der korrekten Antwort vergleichbar sein.
 - Die Distraktoren dürfen nicht offensichtlich falsch sein, sondern sollen plausibel wirken.
 - Kein Distraktor darf inhaltlich korrekt sein oder die korrekte Antwort paraphrasieren.
+- Jeder Distraktor sollte prägnant sein und höchstens 1-2 Sätze umfassen.
+- Verwende ausschließlich Plaintext ohne jegliche Formatierungen wie Markdown, Code-Blöcke oder andere Markup-Syntax. Code-Snippets sollen direkt im Text ohne besondere Kennzeichnung stehen.
