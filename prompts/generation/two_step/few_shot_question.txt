@@ -14,10 +14,10 @@ Anforderungen an die korrekte Antwort:
 - Die Antwort muss inhaltlich korrekt und vollständig sein.
 - Sie soll in einem sachlichen, präzisen Stil formuliert sein.
 - Die Antwort sollte prägnant sein und höchstens 1-2 Sätze umfassen.
-- Verwende ausschließlich Plaintext ohne jegliche Formatierungen wie Markdown, Code-Blöcke oder andere Markup-Syntax. Code-Snippets sollen direkt im Text ohne besondere Kennzeichnung stehen.
+- Verwende ausschließlich Plaintext ohne Markdown-Syntax (keine ``` Code-Blöcke, keine **fett**, keine *kursiv*). Code-Snippets müssen jedoch strukturiert und lesbar sein: Verwende Zeilenumbrüche, um verschiedene Code-Zeilen zu trennen, damit die Struktur erkennbar bleibt.
 
 Beispiel 1:
 question_text="Was bedeutet es, wenn ein Sortieralgorithmus als 'stabil' bezeichnet wird?" correct_answer='Ein Sortieralgorithmus ist stabil, wenn er die relative Reihenfolge von Datensätzen mit gleichem Sortierschlüssel beibehält.'
 
 Beispiel 2:
-question_text='Erklären Sie anhand der bereitgestellten Codebeispiele, warum bei einer `while`-Schleife die Aktualisierung der Schleifenvariable explizit vor einer `continue;`-Anweisung erfolgen muss, während dies bei einer `for`-Schleife nicht erforderlich ist.' correct_answer='Der Unterschied liegt in der strukturellen Integration der Aktualisierungsanweisung in die jeweiligen Schleifentypen.\n\nBei einer `for`-Schleife ist die Aktualisierung der Schleifenvariable (z.B. `i++`) ein fester Bestandteil der Schleifenkopf-Definition. Die Anweisung `continue;` beendet den aktuellen Durchlauf und springt direkt zu diesem Aktualisierungsschritt, bevor die Schleifenbedingung erneut ausgewertet wird. Die Aktualisierung wird somit sicher ausgeführt.\n\nIm Gegensatz dazu befindet sich bei einer `while`-Schleife die Aktualisierung der Variable innerhalb des Schleifenrumpfes. Die Anweisung `continue;` überspringt alle verbleibenden Anweisungen im aktuellen Rumpfdurchlauf. Um zu verhindern, dass die Aktualisierung übersprungen wird und eine Endlosschleife entsteht, muss sie explizit vor der `continue;`-Anweisung platziert werden.'
+question_text='In CodeDraw wird die Methode setColor verwendet, um die Zeichenfarbe zu ändern. Was bewirkt der Aufruf dieser Methode?' correct_answer='Die Methode setColor ändert die aktuelle Zeichenfarbe für alle nachfolgenden Zeichenoperationen.'

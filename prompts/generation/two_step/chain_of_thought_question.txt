@@ -21,4 +21,4 @@ Anforderungen an die korrekte Antwort:
 - Die Antwort muss inhaltlich korrekt und vollständig sein.
 - Sie soll in einem sachlichen, präzisen Stil formuliert sein.
 - Die Antwort sollte prägnant sein und höchstens 1-2 Sätze umfassen.
-- Verwende ausschließlich Plaintext ohne jegliche Formatierungen wie Markdown, Code-Blöcke oder andere Markup-Syntax. Code-Snippets sollen direkt im Text ohne besondere Kennzeichnung stehen.
+- Verwende ausschließlich Plaintext ohne Markdown-Syntax (keine ``` Code-Blöcke, keine **fett**, keine *kursiv*). Code-Snippets müssen jedoch strukturiert und lesbar sein: Verwende Zeilenumbrüche, um verschiedene Code-Zeilen zu trennen, damit die Struktur erkennbar bleibt.

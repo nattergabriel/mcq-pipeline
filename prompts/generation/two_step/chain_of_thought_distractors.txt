@@ -16,4 +16,4 @@ Anforderungen an die Distraktoren:
 - Die Distraktoren dürfen nicht offensichtlich falsch sein, sondern sollen plausibel wirken.
 - Kein Distraktor darf inhaltlich korrekt sein oder die korrekte Antwort paraphrasieren.
 - Jeder Distraktor sollte prägnant sein und höchstens 1-2 Sätze umfassen.
-- Verwende ausschließlich Plaintext ohne jegliche Formatierungen wie Markdown, Code-Blöcke oder andere Markup-Syntax. Code-Snippets sollen direkt im Text ohne besondere Kennzeichnung stehen.
+- Verwende ausschließlich Plaintext ohne Markdown-Syntax (keine ``` Code-Blöcke, keine **fett**, keine *kursiv*). Code-Snippets müssen jedoch strukturiert und lesbar sein: Verwende Zeilenumbrüche, um verschiedene Code-Zeilen zu trennen, damit die Struktur erkennbar bleibt.
