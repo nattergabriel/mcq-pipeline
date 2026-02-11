@@ -31,28 +31,32 @@ def _format_mcq_for_evaluation(mcq: Dict) -> str:
     return formatted
 
 
-def _evaluate_single_mcq(prompt_text: str, mcq: Dict, context: str, model: str, temperature: float) -> Dict:
+def _evaluate_single_mcq(prompt_text: str, mcq: Dict, context: str, model: str, temperature: float, max_retries: int = 3) -> Dict:
     """
     Evaluates a single MCQ using the LLM and LangChain.
     """
-    try:
-        llm = get_llm_model(model=model, temperature=temperature)
-        structured_llm = llm.with_structured_output(EvaluationResult)
+    for attempt in range(1, max_retries + 1):
+        try:
+            llm = get_llm_model(model=model, temperature=temperature)
+            structured_llm = llm.with_structured_output(EvaluationResult)
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", prompt_text),
-            ("user", "{mcq_text}\n\nKontext:\n{context}")
-        ])
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", prompt_text),
+                ("user", "{mcq_text}\n\nKontext:\n{context}")
+            ])
 
-        chain = prompt | structured_llm
+            chain = prompt | structured_llm
 
-        mcq_text = _format_mcq_for_evaluation(mcq)
-        result = chain.invoke({"mcq_text": mcq_text, "context": context})
+            mcq_text = _format_mcq_for_evaluation(mcq)
+            result = chain.invoke({"mcq_text": mcq_text, "context": context})
 
-        return result.model_dump()
-    except Exception as e:
-        logger.error(f"Failed to evaluate MCQ: {e}")
-        return {}
+            return result.model_dump()
+        except Exception as e:
+            logger.warning(
+                f"Failed to evaluate MCQ (attempt {attempt}/{max_retries}): {e}")
+
+    logger.error(f"Failed to evaluate MCQ after {max_retries} attempts")
+    return {}
 
 
 def _evaluate_file(generated_file: Path, prompt_text: str, evaluation_config: EvaluationConfig) -> None:
@@ -76,7 +80,7 @@ def _evaluate_file(generated_file: Path, prompt_text: str, evaluation_config: Ev
 
         context = mcq.get("metadata", {}).get("chunk_text", "")
         evaluation = _evaluate_single_mcq(
-            prompt_text, mcq, context, evaluation_config.model, evaluation_config.temperature)
+            prompt_text, mcq, context, evaluation_config.model, evaluation_config.temperature, evaluation_config.max_retries)
 
         if evaluation:
             # Append evaluation to the MCQ

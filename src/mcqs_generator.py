@@ -27,90 +27,100 @@ from src.models import (
 logger = logging.getLogger(__name__)
 
 
-def _generate_single_step_mcq(prompt_text: str, text: str, model: str, temperature: float, capture_reasoning: bool = False) -> Dict:
+def _generate_single_step_mcq(prompt_text: str, text: str, model: str, temperature: float, capture_reasoning: bool = False, max_retries: int = 3) -> Dict:
     """
     Generates an MCQ in a single LLM call using LangChain.
     If capture_reasoning is True (for Chain-of-Thought), uses a model that includes reasoning steps.
     """
-    try:
-        llm = get_llm_model(model=model, temperature=temperature)
-        structured_llm = llm.with_structured_output(
-            SingleStepMCQWithReasoning if capture_reasoning else SingleStepMCQ)
+    for attempt in range(1, max_retries + 1):
+        try:
+            llm = get_llm_model(model=model, temperature=temperature)
+            structured_llm = llm.with_structured_output(
+                SingleStepMCQWithReasoning if capture_reasoning else SingleStepMCQ)
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", prompt_text),
-            ("user", "{text}")
-        ])
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", prompt_text),
+                ("user", "{text}")
+            ])
 
-        chain = prompt | structured_llm
-        result = chain.invoke({"text": text})
+            chain = prompt | structured_llm
+            result = chain.invoke({"text": text})
 
-        return result.model_dump()
-    except Exception as e:
-        logger.error(f"Error generating single step MCQ: {e}")
-        return {}
+            return result.model_dump()
+        except Exception as e:
+            logger.warning(
+                f"Error generating single step MCQ (attempt {attempt}/{max_retries}): {e}")
+
+    logger.error(
+        f"Failed to generate single step MCQ after {max_retries} attempts")
+    return {}
 
 
-def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: str, text: str, model: str, temperature: float, capture_reasoning: bool = False) -> Dict:
+def _generate_two_step_mcq(question_prompt_text: str, distractor_prompt_text: str, text: str, model: str, temperature: float, capture_reasoning: bool = False, max_retries: int = 3) -> Dict:
     """
     Generates an MCQ in two LLM calls using LangChain.
     If capture_reasoning is True (for Chain-of-Thought), uses models that include reasoning steps.
     """
-    try:
-        llm = get_llm_model(model=model, temperature=temperature)
+    for attempt in range(1, max_retries + 1):
+        try:
+            llm = get_llm_model(model=model, temperature=temperature)
 
-        # Step 1: Generate question and correct answer
-        question_llm = llm.with_structured_output(
-            TwoStepQuestionWithReasoning if capture_reasoning else TwoStepQuestion)
-        question_prompt = ChatPromptTemplate.from_messages([
-            ("system", question_prompt_text),
-            ("user", "{text}")
-        ])
-        question_chain = question_prompt | question_llm
+            # Step 1: Generate question and correct answer
+            question_llm = llm.with_structured_output(
+                TwoStepQuestionWithReasoning if capture_reasoning else TwoStepQuestion)
+            question_prompt = ChatPromptTemplate.from_messages([
+                ("system", question_prompt_text),
+                ("user", "{text}")
+            ])
+            question_chain = question_prompt | question_llm
 
-        question_result = question_chain.invoke({"text": text})
+            question_result = question_chain.invoke({"text": text})
 
-        # Step 2: Generate distractors
-        distractor_llm = llm.with_structured_output(
-            TwoStepDistractorsWithReasoning if capture_reasoning else TwoStepDistractors)
-        distractor_prompt = ChatPromptTemplate.from_messages([
-            ("system", distractor_prompt_text),
-            ("user", "{input}")
-        ])
-        distractor_chain = distractor_prompt | distractor_llm
+            # Step 2: Generate distractors
+            distractor_llm = llm.with_structured_output(
+                TwoStepDistractorsWithReasoning if capture_reasoning else TwoStepDistractors)
+            distractor_prompt = ChatPromptTemplate.from_messages([
+                ("system", distractor_prompt_text),
+                ("user", "{input}")
+            ])
+            distractor_chain = distractor_prompt | distractor_llm
 
-        distractor_input = json.dumps({
-            "question": question_result.question_text,
-            "correct_answer": question_result.correct_answer
-        }, ensure_ascii=False)
+            distractor_input = json.dumps({
+                "question": question_result.question_text,
+                "correct_answer": question_result.correct_answer
+            }, ensure_ascii=False)
 
-        distractor_result = distractor_chain.invoke(
-            {"input": distractor_input})
+            distractor_result = distractor_chain.invoke(
+                {"input": distractor_input})
 
-        # Combine results
-        distractors = distractor_result.distractors
-        if len(distractors) != 3:
-            raise ValueError(
-                f"Expected exactly 3 distractors, got {len(distractors)}")
+            # Combine results
+            distractors = distractor_result.distractors
+            if len(distractors) != 3:
+                raise ValueError(
+                    f"Expected exactly 3 distractors, got {len(distractors)}")
 
-        result = {
-            "question_text": question_result.question_text,
-            "answer_options": [
-                {"text": question_result.correct_answer, "is_correct": True},
-                {"text": distractors[0], "is_correct": False},
-                {"text": distractors[1], "is_correct": False},
-                {"text": distractors[2], "is_correct": False}
-            ]
-        }
+            result = {
+                "question_text": question_result.question_text,
+                "answer_options": [
+                    {"text": question_result.correct_answer, "is_correct": True},
+                    {"text": distractors[0], "is_correct": False},
+                    {"text": distractors[1], "is_correct": False},
+                    {"text": distractors[2], "is_correct": False}
+                ]
+            }
 
-        if capture_reasoning:
-            result["question_reasoning"] = question_result.reasoning
-            result["distractor_reasoning"] = distractor_result.reasoning
+            if capture_reasoning:
+                result["question_reasoning"] = question_result.reasoning
+                result["distractor_reasoning"] = distractor_result.reasoning
 
-        return result
-    except Exception as e:
-        logger.error(f"Error generating two-step MCQ: {e}")
-        return {}
+            return result
+        except Exception as e:
+            logger.warning(
+                f"Error generating two-step MCQ (attempt {attempt}/{max_retries}): {e}")
+
+    logger.error(
+        f"Failed to generate two-step MCQ after {max_retries} attempts")
+    return {}
 
 
 def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: List[Path], output_dir: Path) -> List[Dict]:
@@ -167,10 +177,10 @@ def _generate_mcqs_for_experiment(experiment: ExperimentConfig, content_files: L
                 try:
                     mcq = (
                         _generate_single_step_mcq(
-                            prompt_text, text, experiment.model, experiment.temperature, experiment.capture_reasoning)
+                            prompt_text, text, experiment.model, experiment.temperature, experiment.capture_reasoning, experiment.max_retries)
                         if experiment.mode == "single_step"
                         else _generate_two_step_mcq(
-                            question_prompt_text, distractor_prompt_text, text, experiment.model, experiment.temperature, experiment.capture_reasoning
+                            question_prompt_text, distractor_prompt_text, text, experiment.model, experiment.temperature, experiment.capture_reasoning, experiment.max_retries
                         )
                     )
                     if "question_text" in mcq and "answer_options" in mcq:

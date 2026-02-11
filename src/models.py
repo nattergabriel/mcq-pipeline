@@ -16,6 +16,7 @@ class ExperimentConfig(BaseModel):
     num_questions_per_chunk: int = 1
     capture_reasoning: bool = False
     max_questions_per_pdf: Optional[int] = None
+    max_retries: int = 3
 
     # Optional fields (depending on mode)
     prompt_file: Optional[str] = None
@@ -31,6 +32,7 @@ class EvaluationConfig(BaseModel):
     prompt_file: str
     model: str
     temperature: float = 0.5
+    max_retries: int = 3
 
 
 class ExportConfig(BaseModel):
