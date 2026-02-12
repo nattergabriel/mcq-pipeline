@@ -15,6 +15,7 @@ generation:
       temperature: 0.75
       num_questions_per_chunk: 1
       max_questions_per_pdf: 5
+      max_retries: 10
 
     - name: "setup2"
       mode: "two_step"
@@ -24,11 +25,13 @@ generation:
       temperature: 0.9
       num_questions_per_chunk: 1
       max_questions_per_pdf: 2
+      max_retries: 10
 
 evaluation:
   prompt_file: "prompts/evaluation/baseline.txt"
   model: "mistral-small-3.2-24b"
   temperature: 0.3
+  max_retries: 10
 
 export:
   min_weighted_avg_score: 1.5 # Minimum average score to include MCQ in export
