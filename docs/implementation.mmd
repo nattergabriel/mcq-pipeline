@@ -1,11 +1,6 @@
 graph TD
 
-    %% Color definitions
-
-    classDef default fill:white,stroke:blue,color:black
-    classDef fill fill:blue,color:white
-
-    %% Node definitions
+    %% Nodes
 
     Config[config.yaml]
     Env[.env]
@@ -39,16 +34,13 @@ graph TD
         Discard[Discard Question]
     end
     
-
-    %% Workflow Connections
+    %% Edges
 
     Config --> Main
     Main -- "extract" --> Extractor
     Main -- "generate" --> Generator
     Main -- "evaluate" --> Evaluator
     Main -- "export" --> Exporter
-
-    %% Data Flow Connections
 
     PDFs --> Extractor
     Extractor --> Extracted_JSON
@@ -66,9 +58,13 @@ graph TD
     Filter -- Yes --> Final_XML
     Filter -- No --> Discard
 
-    %% API Interactions
-
     Env --> LLM_Client
     Generator --> LLM_Client
     Evaluator --> LLM_Client
     LLM_Client <--> External_API
+
+
+    %% Color definitions
+
+    classDef default fill:white,stroke:blue,color:black
+    classDef fill fill:blue,color:white

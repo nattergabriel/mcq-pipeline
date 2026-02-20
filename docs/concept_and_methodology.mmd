@@ -1,0 +1,40 @@
+graph TD
+
+    %% Nodes
+
+    A["**1. Data Preparation**
+    Raw PDFs & Lecture Materials"]
+
+    B["**2. Prompt Strategy Design**
+    Defining Single-Prompt vs.
+    Step-by-Step Variants"]
+
+    C["**3. Automated Generation**
+    Open-source LLM processing
+    of text chunks"]
+
+    D["**4. Quality Control**
+    LLM-as-a-Critic Evaluation"]
+
+    E{"Manual Review
+    Subset"}
+
+    F["**5. Structured Output**
+    Moodle Integration &
+    Final MCQ Dataset"]
+
+    %% Edges
+
+    A -->|"Text Extraction &
+    Semantic Chunking"| B
+    B --> C
+    C --> D
+    D -.->|"Reliability Check"| E
+    E -.->|"Validate"| D
+    D --> F
+    
+    %% Color definitions
+
+    classDef default fill:white,stroke:blue,color:black
+    classDef fill fill:blue,color:white
+    class A,B,C,D,F fill
