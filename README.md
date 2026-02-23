@@ -2,6 +2,11 @@
 
 This repository contains the source code and documentation for my bachelor's thesis, which focuses on the automated generation of multiple-choice questions from university lecture materials.
 
+## Prerequisites
+
+- Python >= 3.11
+- [`uv`](https://docs.astral.sh/uv/) package manager
+
 ## Setup
 
 Follow these steps to set up the project environment.
@@ -41,7 +46,16 @@ Before running the pipeline, you'll need to create your own `config.yaml` file. 
 
 Place the lecture PDFs you want to process into the directory you specified for `extraction.input_pdfs_dir` in `config.yaml` (e.g., `data/input/slides`).
 
-### 3. Run the Pipeline
+### 3. Generation Modes
+
+Each experiment in `config.yaml` uses one of two generation modes:
+
+- **`single_step`**: A single LLM call generates the question, correct answer, and all distractors at once. Uses the `prompt_file` config key.
+- **`two_step`**: The first LLM call generates the question and correct answer, then a second call generates the distractors. Uses the `question_prompt_file` and `distractor_prompt_file` config keys.
+
+For each mode, the following prompting strategies are available: `zero_shot`, `few_shot`, and `chain_of_thought`. See the `prompts/generation/` directory for all available prompt templates. Setting `capture_reasoning: true` enables chain-of-thought reasoning capture in the output.
+
+### 4. Run the Pipeline
 
 You can execute the workflow in two ways: either all at once for a complete run or step-by-step for more control.
 
@@ -89,7 +103,9 @@ This approach is useful when you only need to perform a specific part of the pro
 4. Export Evaluated Questions
 
    This command converts the evaluated questions for all experiments into Moodle-compatible XML files. It automatically searches `output_dir/mcqs/` and processes any file named `evaluated_mcqs.json`. Only questions that meet the quality criteria are exported:
-   - The weighted average score across all evaluation metrics must be ≥ 1.5
+   - Each evaluation metric is scored on a scale of 0, 1, or 2
+   - The weighted average score across all metrics must meet the `export.min_weighted_avg_score` threshold (configurable in `config.yaml`)
+   - The relative importance of each metric can be adjusted via `export.criteria_weights`
    - No individual metric score can be 0
 
    **Notes:**
@@ -99,3 +115,15 @@ This approach is useful when you only need to perform a specific part of the pro
    ```bash
    uv run python main.py export
    ```
+
+### Output Structure
+
+```
+output_dir/
+├── extracted_pdfs/ # Chunked text from PDFs (JSON)
+└── mcqs/
+    └── <experiment_name>/
+        ├── generated_mcqs.json # Raw generated MCQs
+        ├── evaluated_mcqs.json # MCQs with evaluation scores
+        └── exported_mcqs.xml # Moodle-compatible export
+```
