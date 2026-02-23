@@ -16,7 +16,7 @@ cd bachelors-thesis
 ### 2. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+make install
 ```
 
 ### 3. Set up Environment Variables
@@ -55,7 +55,7 @@ This is the easiest and recommended way to use the tool. This single command wil
 4. Export the evaluated questions to Moodle XML.
 
 ```bash
-python main.py run
+make run
 ```
 
 #### Workflow 2: Run Each Step Individually
@@ -67,7 +67,7 @@ This approach is useful when you only need to perform a specific part of the pro
    This command processes all PDF files found in the `extraction.input_pdfs_dir`. It extracts the content from each file and saves it as a structured JSON file in `output_dir/extracted_pdfs/`.
 
    ```bash
-   python main.py extract
+   uv run python main.py extract
    ```
 
 2. Generate MCQs
@@ -75,15 +75,15 @@ This approach is useful when you only need to perform a specific part of the pro
    This command runs the experiments defined in your `config.yaml` under `generation.experiments` to generate multiple-choice questions from the extracted content. The results for each experiment are saved in a separate, named subfolder within `output_dir/mcqs/`, always using the filename `generated_mcqs.json`.
 
    ```bash
-   python main.py generate
+   uv run python main.py generate
    ```
 
 3. Evaluate Generated MCQs
 
-   This command evaluates the generated MCQs using the criteria and model defined in the `evaluation` section of your `config.yaml`. The evaluation assesses each question on multiple quality dimensions (clarity, correctness and distractor_quality). The evaluated questions are saved as `evaluated_mcqs.json` in each experiment subfolder.
+   This command evaluates the generated MCQs using the criteria and model defined in the `evaluation` section of your `config.yaml`. The evaluation assesses each question on multiple quality dimensions (clarity, correctness, distractor_quality and relevance). The evaluated questions are saved as `evaluated_mcqs.json` in each experiment subfolder.
 
    ```bash
-   python main.py evaluate
+   uv run python main.py evaluate
    ```
 
 4. Export Evaluated Questions
@@ -97,5 +97,5 @@ This approach is useful when you only need to perform a specific part of the pro
    - In the generated and evaluated JSON files, the correct answer is always listed first. However, when imported into Moodle, the answer options are automatically shuffled.
 
    ```bash
-   python main.py export
+   uv run python main.py export
    ```
