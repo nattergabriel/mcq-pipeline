@@ -2,21 +2,21 @@
 Main entry point and command-line interface for the MCQ generation pipeline.
 """
 
-import yaml
-import logging
 import argparse
+import logging
 from pathlib import Path
+
+import yaml
 from pydantic import ValidationError
 
-from src.models import AppConfig
-from src.pdf_extractor import extract_and_save_pdfs
-from src.mcqs_generator import generate_and_save_mcqs
 from src.mcqs_evaluator import evaluate_and_save_mcqs
 from src.mcqs_exporter import find_and_export_mcqs
+from src.mcqs_generator import generate_and_save_mcqs
+from src.models import AppConfig
+from src.pdf_extractor import extract_and_save_pdfs
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s"
+    level=logging.INFO, format="[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,7 @@ def _load_config(config_path: Path) -> AppConfig:
         with open(config_path, "r", encoding="utf-8") as f:
             config_dict = yaml.safe_load(f)
             config = AppConfig(**config_dict)
-            logger.info(
-                f"Successfully loaded configuration from '{config_path}'")
+            logger.info(f"Successfully loaded configuration from '{config_path}'")
             return config
     except FileNotFoundError:
         logger.error(f"Configuration file not found at '{config_path}'")
@@ -52,42 +51,41 @@ def _setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
 
     subparsers = parser.add_subparsers(
-        dest="command",
-        required=True,
-        help="Available commands")
+        dest="command", required=True, help="Available commands"
+    )
 
     subparsers.add_parser(
-        "run",
-        help="Run the entire pipeline: extract, generate, and export.")
+        "run", help="Run the entire pipeline: extract, generate, and export."
+    )
 
     subparsers.add_parser(
-        "extract",
-        help="Extract text from all PDFs defined in config.yaml.")
+        "extract", help="Extract text from all PDFs defined in config.yaml."
+    )
 
     subparsers.add_parser(
         "generate",
-        help="Generate MCQs from extracted text using strategies in config.yaml.")
+        help="Generate MCQs from extracted text using strategies in config.yaml.",
+    )
 
     subparsers.add_parser(
-        "evaluate",
-        help="Evaluate generated MCQs using quality criteria.")
+        "evaluate", help="Evaluate generated MCQs using quality criteria."
+    )
 
-    subparsers.add_parser(
-        "export",
-        help="Export generated MCQs to Moodle XML format.")
+    subparsers.add_parser("export", help="Export generated MCQs to Moodle XML format.")
 
     return parser
 
 
 def _run_extract(config: AppConfig):
     """
-    Reads the necessary paths from the config file and calls the main extraction function.
+    Reads paths from the config and calls the extraction function.
     """
     logger.info("Starting PDF extraction")
 
     if not config.extraction.input_pdfs_dir or not config.output_dir:
         logger.error(
-            "'extraction.input_pdfs_dir' and/or 'output_dir' not defined in config.yaml")
+            "'extraction.input_pdfs_dir' and/or 'output_dir' not defined in config.yaml"
+        )
         return
 
     extracted_output_dir = Path(config.output_dir) / "extracted_pdfs"
@@ -95,37 +93,38 @@ def _run_extract(config: AppConfig):
         Path(config.extraction.input_pdfs_dir),
         extracted_output_dir,
         config.extraction.chunk_size,
-        config.extraction.chunk_overlap
+        config.extraction.chunk_overlap,
     )
 
 
 def _run_generate(config: AppConfig):
     """
-    Reads paths and experiment settings from the config and calls the main generator function.
+    Reads paths and experiment settings from the config and calls the generator.
     """
     logger.info("Starting MCQ generation")
 
     if not config.output_dir or not config.generation.experiments:
         logger.error(
-            "'output_dir' and/or 'generation.experiments' not defined in config.yaml")
+            "'output_dir' and/or 'generation.experiments' not defined in config.yaml"
+        )
         return
 
     extracted_content_dir = Path(config.output_dir) / "extracted_pdfs"
     mcqs_output_dir = Path(config.output_dir) / "mcqs"
 
-    generate_and_save_mcqs(config.generation.experiments,
-                           extracted_content_dir, mcqs_output_dir)
+    generate_and_save_mcqs(
+        config.generation.experiments, extracted_content_dir, mcqs_output_dir
+    )
 
 
 def _run_evaluate(config: AppConfig):
     """
-    Reads paths and evaluation settings from the config and calls the main evaluator function.
+    Reads paths and evaluation settings from the config and calls the evaluator.
     """
     logger.info("Starting MCQ evaluation")
 
     if not config.output_dir or not config.evaluation:
-        logger.error(
-            "'output_dir' and/or 'evaluation' not defined in config.yaml")
+        logger.error("'output_dir' and/or 'evaluation' not defined in config.yaml")
         return
 
     mcqs_output_dir = Path(config.output_dir) / "mcqs"

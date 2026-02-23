@@ -3,21 +3,23 @@ Module for extracting text content from PDF files.
 """
 
 import json
-import pymupdf
 import logging
 from pathlib import Path
+
+import pymupdf
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger(__name__)
 
 
-def extract_and_save_pdfs(input_dir: Path, output_dir: Path, chunk_size: int, chunk_overlap: int):
+def extract_and_save_pdfs(
+    input_dir: Path, output_dir: Path, chunk_size: int, chunk_overlap: int
+):
     """
     Processes all PDFs in the input directory and saves the extracted
     text content as JSON files in the output directory.
     """
-    logger.info(
-        f"Starting PDF extraction from '{input_dir}' to '{output_dir}'")
+    logger.info(f"Starting PDF extraction from '{input_dir}' to '{output_dir}'")
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -39,7 +41,8 @@ def extract_and_save_pdfs(input_dir: Path, output_dir: Path, chunk_size: int, ch
             doc.close()
 
             text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+                chunk_size=chunk_size, chunk_overlap=chunk_overlap
+            )
             chunks = text_splitter.split_text(full_text)
 
             # Pad last chunk if it's too short

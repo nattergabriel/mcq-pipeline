@@ -1,4 +1,5 @@
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -50,22 +51,20 @@ class AppConfig(BaseModel):
 
 class AnswerOption(BaseModel):
     text: str = Field(description="The text of the answer option.")
-    is_correct: bool = Field(
-        description="Whether this option is the correct answer.")
+    is_correct: bool = Field(description="Whether this option is the correct answer.")
 
 
 class SingleStepMCQ(BaseModel):
     question_text: str = Field(description="The text of the question.")
-    answer_options: List[AnswerOption] = Field(
-        description="List of answer options.")
+    answer_options: List[AnswerOption] = Field(description="List of answer options.")
 
 
 class SingleStepMCQWithReasoning(BaseModel):
     reasoning: str = Field(
-        description="Step-by-step reasoning process for creating the question.")
+        description="Step-by-step reasoning process for creating the question."
+    )
     question_text: str = Field(description="The text of the question.")
-    answer_options: List[AnswerOption] = Field(
-        description="List of answer options.")
+    answer_options: List[AnswerOption] = Field(description="List of answer options.")
 
 
 class TwoStepQuestion(BaseModel):
@@ -75,7 +74,8 @@ class TwoStepQuestion(BaseModel):
 
 class TwoStepQuestionWithReasoning(BaseModel):
     reasoning: str = Field(
-        description="Step-by-step reasoning process for creating the question.")
+        description="Step-by-step reasoning process for creating the question."
+    )
     question_text: str = Field(description="The text of the question.")
     correct_answer: str = Field(description="The correct answer text.")
 
@@ -86,15 +86,16 @@ class TwoStepDistractors(BaseModel):
 
 class TwoStepDistractorsWithReasoning(BaseModel):
     reasoning: str = Field(
-        description="Step-by-step reasoning process for creating the distractors.")
+        description="Step-by-step reasoning process for creating the distractors."
+    )
     distractors: List[str] = Field(description="List of distractor answers.")
 
 
 class EvaluationCriterion(BaseModel):
-    score: int = Field(
-        description="Score for the criterion (either 0, 1 or 2).")
+    score: int = Field(description="Score for the criterion (either 0, 1 or 2).")
     reasoning: str = Field(
-        description="Reasoning for the score. Not needed if the score is perfect (2).")
+        description="Reasoning for the score. Not needed if the score is perfect (2)."
+    )
 
 
 class EvaluationResult(BaseModel):

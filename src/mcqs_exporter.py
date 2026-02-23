@@ -4,20 +4,21 @@ Module for exporting evaluated MCQs from JSON format to Moodle XML format.
 
 import json
 import logging
-from pathlib import Path
-from xml.dom import minidom
-from typing import List, Dict, Any
 import xml.etree.ElementTree as ET
+from pathlib import Path
+from typing import Any, Dict, List
+from xml.dom import minidom
 
 from src.models import ExportConfig
 
 logger = logging.getLogger(__name__)
 
-EVALUATION_METRICS = ["clarity", "correctness",
-                      "distractor_quality", "relevance"]
+EVALUATION_METRICS = ["clarity", "correctness", "distractor_quality", "relevance"]
 
 
-def _should_export_question(question: Dict[str, Any], weights: Dict[str, float], min_score: float) -> bool:
+def _should_export_question(
+    question: Dict[str, Any], weights: Dict[str, float], min_score: float
+) -> bool:
     """
     Checks if a question should be exported based on evaluation scores.
     Requirements: weighted average score >= min_score and no score is 0.
@@ -57,8 +58,7 @@ def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) 
         name_text = ET.SubElement(name, "text")
         name_text.text = q_data["question_text"][:50]
 
-        questiontext = ET.SubElement(
-            question, "questiontext", format="markdown")
+        questiontext = ET.SubElement(question, "questiontext", format="markdown")
         questiontext_text = ET.SubElement(questiontext, "text")
         questiontext_text.text = q_data["question_text"]
 
@@ -68,7 +68,8 @@ def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) 
         for option in q_data["answer_options"]:
             fraction = "100" if option.get("is_correct", False) else "0"
             answer = ET.SubElement(
-                question, "answer", fraction=fraction, format="markdown")
+                question, "answer", fraction=fraction, format="markdown"
+            )
             answer_text = ET.SubElement(answer, "text")
             answer_text.text = option["text"]
 
@@ -86,11 +87,11 @@ def _process_mcqs_file(path: Path, weights: Dict[str, float], min_score: float) 
             questions = json.load(f)
 
         questions = [
-            q for q in questions if _should_export_question(q, weights, min_score)]
+            q for q in questions if _should_export_question(q, weights, min_score)
+        ]
 
         if not questions:
-            logger.warning(
-                f"Skipping '{path}' as it contains no qualifying questions")
+            logger.warning(f"Skipping '{path}' as it contains no qualifying questions")
             return
 
         xml_content = _convert_mcqs_to_moodle_xml(questions, path.parent.name)
@@ -101,13 +102,13 @@ def _process_mcqs_file(path: Path, weights: Dict[str, float], min_score: float) 
             f.write(xml_content)
 
         logger.info(
-            f"Successfully exported {len(questions)} questions to '{xml_output_path}'")
+            f"Successfully exported {len(questions)} questions to '{xml_output_path}'"
+        )
 
     except (IOError, json.JSONDecodeError) as e:
         logger.error(f"Failed to process '{path}': {e}")
     except Exception as e:
-        logger.error(
-            f"An unexpected error occurred while processing '{path}': {e}")
+        logger.error(f"An unexpected error occurred while processing '{path}': {e}")
 
 
 def find_and_export_mcqs(mcqs_base_dir: Path, export_config: ExportConfig):
@@ -116,18 +117,22 @@ def find_and_export_mcqs(mcqs_base_dir: Path, export_config: ExportConfig):
     Only exports questions that meet the evaluation criteria.
     """
     logger.info(
-        f"Using evaluation weights: {export_config.criteria_weights}, minimum weighted average score: {export_config.min_weighted_avg_score}")
+        f"Using evaluation weights: {export_config.criteria_weights}, "
+        f"minimum weighted average score: {export_config.min_weighted_avg_score}"
+    )
 
     logger.info(f"Searching for MCQ files in '{mcqs_base_dir}'")
     files = list(mcqs_base_dir.rglob("evaluated_mcqs.json"))
 
     if not files:
         logger.warning(
-            f"No 'evaluated_mcqs.json' files found in '{mcqs_base_dir}' or its subfolders")
+            f"No 'evaluated_mcqs.json' files found in '{mcqs_base_dir}'"
+        )
         return
 
     logger.info(f"Found {len(files)} result file(s) to export")
 
     for path in files:
-        _process_mcqs_file(path, export_config.criteria_weights,
-                           export_config.min_weighted_avg_score)
+        _process_mcqs_file(
+            path, export_config.criteria_weights, export_config.min_weighted_avg_score
+        )

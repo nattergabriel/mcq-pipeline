@@ -1,0 +1,25 @@
+[project]
+name = "bachelors-thesis"
+version = "0.1.0"
+description = "MCQ generation pipeline"
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml",
+    "python-dotenv",
+    "pymupdf",
+    "langchain",
+    "langchain-openai",
+    "langchain-text-splitters",
+    "pydantic",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
