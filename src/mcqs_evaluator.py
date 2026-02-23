@@ -6,7 +6,6 @@ import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Dict
 
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -16,7 +15,7 @@ from src.models import EvaluationConfig, EvaluationResult
 logger = logging.getLogger(__name__)
 
 
-def _format_mcq_for_evaluation(mcq: Dict) -> str:
+def _format_mcq_for_evaluation(mcq: dict) -> str:
     """
     Formats an MCQ into a readable text format for evaluation.
     """
@@ -32,30 +31,19 @@ def _format_mcq_for_evaluation(mcq: Dict) -> str:
 
 
 def _evaluate_single_mcq(
-    prompt_text: str,
-    mcq: Dict,
+    chain,
+    mcq: dict,
     context: str,
-    model: str,
-    temperature: float,
     max_retries: int = 3,
-) -> Dict:
+) -> dict:
     """
-    Evaluates a single MCQ using the LLM and LangChain.
+    Evaluates a single MCQ using a pre-built LangChain chain.
     """
+    mcq_text = _format_mcq_for_evaluation(mcq)
+
     for attempt in range(1, max_retries + 1):
         try:
-            llm = get_llm_model(model=model, temperature=temperature)
-            structured_llm = llm.with_structured_output(EvaluationResult)
-
-            prompt = ChatPromptTemplate.from_messages(
-                [("system", prompt_text), ("user", "{mcq_text}\n\nKontext:\n{context}")]
-            )
-
-            chain = prompt | structured_llm
-
-            mcq_text = _format_mcq_for_evaluation(mcq)
             result = chain.invoke({"mcq_text": mcq_text, "context": context})
-
             return result.model_dump()
         except Exception as e:
             logger.warning(
@@ -75,43 +63,42 @@ def _evaluate_file(
     logger.info(f"Evaluating MCQs in {generated_file}")
 
     try:
-        # Load generated MCQs
-        with generated_file.open("r", encoding="utf-8") as f:
-            mcqs = json.load(f)
+        mcqs = json.loads(generated_file.read_text(encoding="utf-8"))
     except Exception as e:
         logger.error(f"Failed to load {generated_file}: {e}")
         return
 
-    # Evaluate each MCQ
+    llm = get_llm_model(
+        model=evaluation_config.model, temperature=evaluation_config.temperature
+    )
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", prompt_text), ("user", "{mcq_text}\n\nKontext:\n{context}")]
+    )
+    chain = prompt | llm.with_structured_output(EvaluationResult)
+
     evaluated_mcqs = []
     for idx, mcq in enumerate(mcqs, 1):
         logger.info(f"Evaluating MCQ {idx}/{len(mcqs)}")
 
         context = mcq.get("metadata", {}).get("chunk_text", "")
         evaluation = _evaluate_single_mcq(
-            prompt_text,
-            mcq,
-            context,
-            evaluation_config.model,
-            evaluation_config.temperature,
-            evaluation_config.max_retries,
+            chain, mcq, context, evaluation_config.max_retries
         )
 
+        mcq_with_eval = mcq.copy()
         if evaluation:
-            # Append evaluation to the MCQ
-            mcq_with_eval = mcq.copy()
             mcq_with_eval["evaluation"] = evaluation
-            evaluated_mcqs.append(mcq_with_eval)
             logger.debug(f"Successfully evaluated MCQ {idx}")
         else:
             logger.warning(f"Failed to evaluate MCQ {idx}, skipping")
-            evaluated_mcqs.append(mcq)
 
-    # Save evaluated MCQs
+        evaluated_mcqs.append(mcq_with_eval)
+
     output_file = generated_file.parent / "evaluated_mcqs.json"
     try:
-        with output_file.open("w", encoding="utf-8") as f:
-            json.dump(evaluated_mcqs, f, indent=4, ensure_ascii=False)
+        output_file.write_text(
+            json.dumps(evaluated_mcqs, indent=4, ensure_ascii=False), encoding="utf-8"
+        )
         logger.info(f"Saved {len(evaluated_mcqs)} evaluated MCQs to {output_file}")
     except Exception as e:
         logger.error(f"Failed to save evaluated MCQs: {e}")
@@ -124,7 +111,6 @@ def evaluate_and_save_mcqs(evaluation_config: EvaluationConfig, mcqs_dir: Path) 
     logger.info("Starting MCQ evaluation")
 
     prompt_file = Path(evaluation_config.prompt_file)
-
     try:
         prompt_text = prompt_file.read_text(encoding="utf-8")
     except Exception as e:
@@ -138,20 +124,16 @@ def evaluate_and_save_mcqs(evaluation_config: EvaluationConfig, mcqs_dir: Path) 
 
     logger.info(f"Found {len(generated_files)} MCQ files to evaluate")
 
-    executor = ThreadPoolExecutor()
-    futures = []
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(
+                _evaluate_file, generated_file, prompt_text, evaluation_config
+            )
+            for generated_file in generated_files
+        ]
 
-    for generated_file in generated_files:
-        future = executor.submit(
-            _evaluate_file, generated_file, prompt_text, evaluation_config
-        )
-        futures.append(future)
-
-    # Wait for all to complete
-    for future in futures:
-        try:
-            future.result()
-        except Exception as e:
-            logger.error(f"Error processing file: {e}")
-
-    executor.shutdown()
+        for future in futures:
+            try:
+                future.result()
+            except Exception as e:
+                logger.error(f"Error processing file: {e}")

@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -16,17 +14,17 @@ class ExperimentConfig(BaseModel):
     temperature: float = 0.5
     num_questions_per_chunk: int = 1
     capture_reasoning: bool = False
-    max_questions_per_pdf: Optional[int] = None
+    max_questions_per_pdf: int | None = None
     max_retries: int = 3
 
     # Optional fields (depending on mode)
-    prompt_file: Optional[str] = None
-    question_prompt_file: Optional[str] = None
-    distractor_prompt_file: Optional[str] = None
+    prompt_file: str | None = None
+    question_prompt_file: str | None = None
+    distractor_prompt_file: str | None = None
 
 
 class GenerationConfig(BaseModel):
-    experiments: List[ExperimentConfig]
+    experiments: list[ExperimentConfig]
 
 
 class EvaluationConfig(BaseModel):
@@ -38,7 +36,7 @@ class EvaluationConfig(BaseModel):
 
 class ExportConfig(BaseModel):
     min_weighted_avg_score: float
-    criteria_weights: Dict[str, float]
+    criteria_weights: dict[str, float]
 
 
 class AppConfig(BaseModel):
@@ -56,7 +54,7 @@ class AnswerOption(BaseModel):
 
 class SingleStepMCQ(BaseModel):
     question_text: str = Field(description="The text of the question.")
-    answer_options: List[AnswerOption] = Field(description="List of answer options.")
+    answer_options: list[AnswerOption] = Field(description="List of answer options.")
 
 
 class SingleStepMCQWithReasoning(BaseModel):
@@ -64,7 +62,7 @@ class SingleStepMCQWithReasoning(BaseModel):
         description="Step-by-step reasoning process for creating the question."
     )
     question_text: str = Field(description="The text of the question.")
-    answer_options: List[AnswerOption] = Field(description="List of answer options.")
+    answer_options: list[AnswerOption] = Field(description="List of answer options.")
 
 
 class TwoStepQuestion(BaseModel):
@@ -81,14 +79,14 @@ class TwoStepQuestionWithReasoning(BaseModel):
 
 
 class TwoStepDistractors(BaseModel):
-    distractors: List[str] = Field(description="List of distractor answers.")
+    distractors: list[str] = Field(description="List of distractor answers.")
 
 
 class TwoStepDistractorsWithReasoning(BaseModel):
     reasoning: str = Field(
         description="Step-by-step reasoning process for creating the distractors."
     )
-    distractors: List[str] = Field(description="List of distractor answers.")
+    distractors: list[str] = Field(description="List of distractor answers.")
 
 
 class EvaluationCriterion(BaseModel):

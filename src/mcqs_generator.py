@@ -9,7 +9,6 @@ import random
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
 
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -34,25 +33,23 @@ def _generate_single_step_mcq(
     temperature: float,
     capture_reasoning: bool = False,
     max_retries: int = 3,
-) -> Dict:
+) -> dict:
     """
     Generates an MCQ in a single LLM call using LangChain.
     If capture_reasoning is True, uses a model that includes reasoning.
     """
+    llm = get_llm_model(model=model, temperature=temperature)
+    schema = SingleStepMCQWithReasoning if capture_reasoning else SingleStepMCQ
+    structured_llm = llm.with_structured_output(schema)
+
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", prompt_text), ("user", "{text}")]
+    )
+    chain = prompt | structured_llm
+
     for attempt in range(1, max_retries + 1):
         try:
-            llm = get_llm_model(model=model, temperature=temperature)
-            structured_llm = llm.with_structured_output(
-                SingleStepMCQWithReasoning if capture_reasoning else SingleStepMCQ
-            )
-
-            prompt = ChatPromptTemplate.from_messages(
-                [("system", prompt_text), ("user", "{text}")]
-            )
-
-            chain = prompt | structured_llm
             result = chain.invoke({"text": text})
-
             return result.model_dump()
         except Exception as e:
             logger.warning(
@@ -72,37 +69,33 @@ def _generate_two_step_mcq(
     temperature: float,
     capture_reasoning: bool = False,
     max_retries: int = 3,
-) -> Dict:
+) -> dict:
     """
     Generates an MCQ in two LLM calls using LangChain.
     If capture_reasoning is True, uses models that include reasoning.
     """
+    llm = get_llm_model(model=model, temperature=temperature)
+
+    question_schema = (
+        TwoStepQuestionWithReasoning if capture_reasoning else TwoStepQuestion
+    )
+    question_chain = ChatPromptTemplate.from_messages(
+        [("system", question_prompt_text), ("user", "{text}")]
+    ) | llm.with_structured_output(question_schema)
+
+    distractor_schema = (
+        TwoStepDistractorsWithReasoning if capture_reasoning else TwoStepDistractors
+    )
+    distractor_chain = ChatPromptTemplate.from_messages(
+        [("system", distractor_prompt_text), ("user", "{input}")]
+    ) | llm.with_structured_output(distractor_schema)
+
     for attempt in range(1, max_retries + 1):
         try:
-            llm = get_llm_model(model=model, temperature=temperature)
-
             # Step 1: Generate question and correct answer
-            question_llm = llm.with_structured_output(
-                TwoStepQuestionWithReasoning if capture_reasoning else TwoStepQuestion
-            )
-            question_prompt = ChatPromptTemplate.from_messages(
-                [("system", question_prompt_text), ("user", "{text}")]
-            )
-            question_chain = question_prompt | question_llm
-
             question_result = question_chain.invoke({"text": text})
 
             # Step 2: Generate distractors
-            distractor_llm = llm.with_structured_output(
-                TwoStepDistractorsWithReasoning
-                if capture_reasoning
-                else TwoStepDistractors
-            )
-            distractor_prompt = ChatPromptTemplate.from_messages(
-                [("system", distractor_prompt_text), ("user", "{input}")]
-            )
-            distractor_chain = distractor_prompt | distractor_llm
-
             distractor_input = json.dumps(
                 {
                     "question": question_result.question_text,
@@ -110,10 +103,8 @@ def _generate_two_step_mcq(
                 },
                 ensure_ascii=False,
             )
-
             distractor_result = distractor_chain.invoke({"input": distractor_input})
 
-            # Combine results
             distractors = distractor_result.distractors
             if len(distractors) != 3:
                 raise ValueError(
@@ -124,9 +115,7 @@ def _generate_two_step_mcq(
                 "question_text": question_result.question_text,
                 "answer_options": [
                     {"text": question_result.correct_answer, "is_correct": True},
-                    {"text": distractors[0], "is_correct": False},
-                    {"text": distractors[1], "is_correct": False},
-                    {"text": distractors[2], "is_correct": False},
+                    *[{"text": d, "is_correct": False} for d in distractors],
                 ],
             }
 
@@ -144,56 +133,65 @@ def _generate_two_step_mcq(
     return {}
 
 
+def _load_prompts(experiment: ExperimentConfig) -> tuple[str | None, str | None]:
+    """
+    Loads prompt files for the given experiment mode.
+    Returns (prompt, None) for single_step,
+    or (question_prompt, distractor_prompt) for two_step.
+    """
+    if experiment.mode == "single_step":
+        prompt_text = Path(experiment.prompt_file).read_text(encoding="utf-8")
+        return prompt_text, None
+    elif experiment.mode == "two_step":
+        question_prompt = Path(experiment.question_prompt_file).read_text(
+            encoding="utf-8"
+        )
+        distractor_prompt = Path(experiment.distractor_prompt_file).read_text(
+            encoding="utf-8"
+        )
+        return question_prompt, distractor_prompt
+    else:
+        raise ValueError(f"Unknown mode '{experiment.mode}'")
+
+
+def _select_chunk_indices(total_chunks: int, experiment: ExperimentConfig) -> list[int]:
+    """
+    Selects which chunk indices to process based on experiment limits.
+    """
+    if experiment.max_questions_per_pdf is None:
+        return list(range(total_chunks))
+
+    max_chunks = experiment.max_questions_per_pdf // experiment.num_questions_per_chunk
+    if max_chunks >= total_chunks:
+        return list(range(total_chunks))
+
+    return random.sample(range(total_chunks), max_chunks)
+
+
 def _generate_mcqs_for_experiment(
-    experiment: ExperimentConfig, content_files: List[Path], output_dir: Path
-) -> List[Dict]:
+    experiment: ExperimentConfig, content_files: list[Path], output_dir: Path
+) -> list[dict]:
     """
     Generates MCQs for a single experiment.
     """
     logger.info(f"Processing experiment: {experiment.name}")
 
-    # Load prompts
     try:
-        if experiment.mode == "single_step":
-            prompt_text = Path(experiment.prompt_file).read_text(encoding="utf-8")
-            question_prompt_text = distractor_prompt_text = None
-        elif experiment.mode == "two_step":
-            question_prompt_text = Path(experiment.question_prompt_file).read_text(
-                encoding="utf-8"
-            )
-            distractor_prompt_text = Path(experiment.distractor_prompt_file).read_text(
-                encoding="utf-8"
-            )
-            prompt_text = None
-        else:
-            logger.error(
-                f"Unknown mode '{experiment.mode}' for experiment '{experiment.name}'"
-            )
-            return []
+        prompt_a, prompt_b = _load_prompts(experiment)
     except Exception as e:
         logger.error(f"Failed to load prompts for experiment '{experiment.name}': {e}")
         return []
 
     questions = []
     for content_file in content_files:
-        chunks = json.load(content_file.open(encoding="utf-8"))
+        chunks = json.loads(content_file.read_text(encoding="utf-8"))
+        selected_indices = _select_chunk_indices(len(chunks), experiment)
 
-        if experiment.max_questions_per_pdf is not None:
-            max_chunks = (
-                experiment.max_questions_per_pdf // experiment.num_questions_per_chunk
+        if len(selected_indices) < len(chunks):
+            logger.info(
+                f"Randomly selected {len(selected_indices)} chunks "
+                f"out of {len(chunks)} for {content_file.name}"
             )
-            if max_chunks < len(chunks):
-                selected_indices = random.sample(range(len(chunks)), max_chunks)
-                logger.info(
-                    f"Randomly selected {max_chunks} chunks "
-                    f"out of {len(chunks)} for {content_file.name}"
-                )
-            else:
-                # Use all chunks if limit is higher than available chunks
-                selected_indices = list(range(len(chunks)))
-        else:
-            # Also process all chunks
-            selected_indices = list(range(len(chunks)))
 
         for chunk_idx in selected_indices:
             text = chunks[chunk_idx]
@@ -201,26 +199,26 @@ def _generate_mcqs_for_experiment(
 
             for _ in range(experiment.num_questions_per_chunk):
                 try:
-                    mcq = (
-                        _generate_single_step_mcq(
-                            prompt_text,
+                    if experiment.mode == "single_step":
+                        mcq = _generate_single_step_mcq(
+                            prompt_a,
                             text,
                             experiment.model,
                             experiment.temperature,
                             experiment.capture_reasoning,
                             experiment.max_retries,
                         )
-                        if experiment.mode == "single_step"
-                        else _generate_two_step_mcq(
-                            question_prompt_text,
-                            distractor_prompt_text,
+                    else:
+                        mcq = _generate_two_step_mcq(
+                            prompt_a,
+                            prompt_b,
                             text,
                             experiment.model,
                             experiment.temperature,
                             experiment.capture_reasoning,
                             experiment.max_retries,
                         )
-                    )
+
                     if "question_text" in mcq and "answer_options" in mcq:
                         mcq["metadata"] = {
                             "source_file": content_file.name,
@@ -240,15 +238,16 @@ def _generate_mcqs_for_experiment(
     if questions:
         output_path = output_dir / experiment.name / "generated_mcqs.json"
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with output_path.open("w", encoding="utf-8") as f:
-            json.dump(questions, f, indent=4, ensure_ascii=False)
+        output_path.write_text(
+            json.dumps(questions, indent=4, ensure_ascii=False), encoding="utf-8"
+        )
         logger.info(f"Saved {len(questions)} questions to {output_path}")
 
     return questions
 
 
 def generate_and_save_mcqs(
-    experiments: List[ExperimentConfig],
+    experiments: list[ExperimentConfig],
     extracted_content_dir: Path,
     mcqs_output_dir: Path,
 ) -> None:
@@ -264,24 +263,26 @@ def generate_and_save_mcqs(
 
     logger.info(f"Found {len(content_files)} content files")
 
-    executor = ThreadPoolExecutor()
-    futures = []
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            (
+                executor.submit(
+                    _generate_mcqs_for_experiment,
+                    experiment,
+                    content_files,
+                    mcqs_output_dir,
+                ),
+                experiment,
+            )
+            for experiment in experiments
+        ]
 
-    for experiment in experiments:
-        future = executor.submit(
-            _generate_mcqs_for_experiment, experiment, content_files, mcqs_output_dir
-        )
-        futures.append((future, experiment))
-
-    # Wait for all to complete
-    for future, experiment in futures:
-        try:
-            questions = future.result()
-            if not questions:
-                logger.warning(
-                    f"No questions generated for experiment '{experiment.name}'"
-                )
-        except Exception as e:
-            logger.error(f"Error processing experiment '{experiment.name}': {e}")
-
-    executor.shutdown()
+        for future, experiment in futures:
+            try:
+                questions = future.result()
+                if not questions:
+                    logger.warning(
+                        f"No questions generated for experiment '{experiment.name}'"
+                    )
+            except Exception as e:
+                logger.error(f"Error processing experiment '{experiment.name}': {e}")

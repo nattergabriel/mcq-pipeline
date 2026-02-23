@@ -6,7 +6,7 @@ import json
 import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 from xml.dom import minidom
 
 from src.models import ExportConfig
@@ -17,7 +17,7 @@ EVALUATION_METRICS = ["clarity", "correctness", "distractor_quality", "relevance
 
 
 def _should_export_question(
-    question: Dict[str, Any], weights: Dict[str, float], min_score: float
+    question: dict[str, Any], weights: dict[str, float], min_score: float
 ) -> bool:
     """
     Checks if a question should be exported based on evaluation scores.
@@ -39,7 +39,7 @@ def _should_export_question(
     return weighted_avg >= min_score
 
 
-def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) -> str:
+def _convert_mcqs_to_moodle_xml(questions: list[dict[str, Any]], category: str) -> str:
     """
     Converts a list of question dictionaries into a Moodle XML string.
     """
@@ -78,13 +78,12 @@ def _convert_mcqs_to_moodle_xml(questions: List[Dict[str, Any]], category: str) 
     return parsed_xml.toprettyxml(indent="  ", encoding="utf-8")
 
 
-def _process_mcqs_file(path: Path, weights: Dict[str, float], min_score: float) -> None:
+def _process_mcqs_file(path: Path, weights: dict[str, float], min_score: float) -> None:
     """
     Processes a single evaluated_mcqs.json file: loads, filters, converts, and exports.
     """
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            questions = json.load(f)
+        questions = json.loads(path.read_text(encoding="utf-8"))
 
         questions = [
             q for q in questions if _should_export_question(q, weights, min_score)
@@ -97,9 +96,7 @@ def _process_mcqs_file(path: Path, weights: Dict[str, float], min_score: float) 
         xml_content = _convert_mcqs_to_moodle_xml(questions, path.parent.name)
 
         xml_output_path = path.with_name("exported_mcqs.xml")
-
-        with open(xml_output_path, "wb") as f:
-            f.write(xml_content)
+        xml_output_path.write_bytes(xml_content)
 
         logger.info(
             f"Successfully exported {len(questions)} questions to '{xml_output_path}'"
@@ -125,9 +122,7 @@ def find_and_export_mcqs(mcqs_base_dir: Path, export_config: ExportConfig):
     files = list(mcqs_base_dir.rglob("evaluated_mcqs.json"))
 
     if not files:
-        logger.warning(
-            f"No 'evaluated_mcqs.json' files found in '{mcqs_base_dir}'"
-        )
+        logger.warning(f"No 'evaluated_mcqs.json' files found in '{mcqs_base_dir}'")
         return
 
     logger.info(f"Found {len(files)} result file(s) to export")
