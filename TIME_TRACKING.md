@@ -91,8 +91,19 @@ This log tracks the time spent on the bachelor's thesis.
 | 04.01.26 | 4 | Evaluation |
 | 11.02.25 | 0.5 | Coding |
 | 11.02.26 | 3.5 | Evaluation |
-
+| 12.02.26 | 4 | Thesis writing |
+| 15.02.26 | 3.5 | Thesis writing |
+| 16.02.26 | 2.5 | Evaluation |
+| 16.02.26 | 2 | Thesis writing |
+| 17.02.26 | 5 | Thesis writing |
+| 19.02.26 | 4.5 | Thesis writing |
+| 20.02.26 | 4.5 | Thesis writing |
+| 21.02.26 | 4 | Thesis writing |
+| 21.02.26 | 2.5 | Refining |
+| 22.02.26 | 4 | Refining |
+| 22.02.25 | 1.5 | Coding |
 
 ## Notes:
+
 - Entries listed as `Thesis writing` also include related conceptual and structural work, such as creating diagrams, defining evaluation criteria, and preparing supporting materials.
 - For entries listed as `Coding`, a detailed breakdown of the work can be found in the Git commit history for the corresponding date.
