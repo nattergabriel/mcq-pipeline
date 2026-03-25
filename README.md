@@ -108,6 +108,8 @@ This approach is useful when you only need to perform a specific part of the pro
    - The relative importance of each metric can be adjusted via `export.criteria_weights`
    - No individual metric score can be 0
 
+   The exported XML files are saved as `exported_mcqs.xml` in each experiment's subfolder alongside the `evaluated_mcqs.json`.
+
    **Notes:**
    - The exported questions will be categorized by their source PDF filename in Moodle, so choosing descriptive and properly formatted filenames for your input PDFs is recommended.
    - In the generated and evaluated JSON files, the correct answer is always listed first. However, when imported into Moodle, the answer options are automatically shuffled.
@@ -115,15 +117,4 @@ This approach is useful when you only need to perform a specific part of the pro
    ```bash
    uv run python main.py export
    ```
-
-### Output Structure
-
-```
-output_dir/
-├── extracted_pdfs/ # Chunked text from PDFs (JSON)
-└── mcqs/
-    └── <experiment_name>/
-        ├── generated_mcqs.json # Raw generated MCQs
-        ├── evaluated_mcqs.json # MCQs with evaluation scores
-        └── exported_mcqs.xml # Moodle-compatible export
-```
+   
